@@ -275,11 +275,13 @@ function draw(){
   c.globalAlpha=1;
 
   for(const e of enemies){
+    if(e.x<cam.x-canvas.width/2-60||e.x>cam.x+canvas.width/2+60||e.y<cam.y-canvas.height/2-60||e.y>cam.y+canvas.height/2+60)continue;
     c.fillStyle=e.col;c.beginPath();c.arc(e.x,e.y,e.r,0,Math.PI*2);c.fill();
     c.fillStyle='#fff';c.beginPath();c.arc(e.x,e.y-e.r*.3,e.r*.4,0,Math.PI*2);c.fill();
   }
 
   if(boss&&bossActive){
+    if(!(boss.x<cam.x-canvas.width/2-80||boss.x>cam.x+canvas.width/2+80||boss.y<cam.y-canvas.height/2-80||boss.y>cam.y+canvas.height/2+80)){
     c.save();c.translate(boss.x,boss.y);
     c.shadowColor=boss.col;c.shadowBlur=35;
     c.fillStyle=boss.col;c.beginPath();c.arc(0,0,boss.r,0,Math.PI*2);c.fill();
@@ -287,9 +289,10 @@ function draw(){
     c.fillStyle='#fff';c.font='bold 13px Segoe UI';c.textAlign='center';
     c.fillText(boss.name,0,-boss.r-12);
     c.restore();
+    }
   }
-
   for(const pr of projectiles){
+    if(pr.x<cam.x-canvas.width/2-50||pr.x>cam.x+canvas.width/2+50||pr.y<cam.y-canvas.height/2-50||pr.y>cam.y+canvas.height/2+50)continue;
     c.fillStyle=pr.col;c.shadowColor=pr.col;c.shadowBlur=12;
     c.beginPath();c.arc(pr.x,pr.y,pr.r,0,Math.PI*2);c.fill();c.shadowBlur=0;
   }

@@ -461,8 +461,11 @@
                 
                 // Special structures
                 for (let j = 0; j < SPECIAL_OBJECT_COUNT; j++) {
-                    const x = biomeStart + Math.random() * BIOME_WIDTH;
-                    const y = -WORLD_HEIGHT/2 + Math.random() * WORLD_HEIGHT;
+                    // Random position within biome radius (radial system)
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.random() * BIOME_SIZE * 0.6; // Keep special structures more central
+                    const x = center.x + Math.cos(angle) * dist;
+                    const y = center.y + Math.sin(angle) * dist;
                     
                     let type, size, color;
                     

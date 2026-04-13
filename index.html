@@ -113,6 +113,7 @@
         // Biome boundaries: SNOW -20000 to -10000, FOREST -10000 to 0, VOLCANO 0 to 10000, CITY 10000 to 20000, SAND 20000 to 25000
         // Biome size constant (defined early for use in spawn locations)
         const BIOME_SIZE = 12000;
+        const BIOME_WIDTH = 10000; // Legacy constant for minimap and overlay calculations
 
         const DISASTER_CURSES = {
             'JOGO': {
@@ -862,8 +863,9 @@
         
         function drawBiomeOverlay() {
             // Additional atmospheric overlay
-            const startX = Math.floor(camera.x / BIOME_WIDTH) * BIOME_WIDTH;
-            const endX = startX + canvas.width + BIOME_WIDTH;
+            const overlaySize = 400;
+            const startX = Math.floor(camera.x / overlaySize) * overlaySize;
+            const endX = startX + canvas.width + overlaySize;
             
             // Draw atmospheric overlay based on current biome
             const overlaySize = 400;

@@ -864,11 +864,6 @@
         function drawBiomeOverlay() {
             // Additional atmospheric overlay
             const overlaySize = 400;
-            const startX = Math.floor(camera.x / overlaySize) * overlaySize;
-            const endX = startX + canvas.width + overlaySize;
-            
-            // Draw atmospheric overlay based on current biome
-            const overlaySize = 400;
             const overlayStartX = Math.floor(camera.x / overlaySize) * overlaySize;
             const overlayStartY = Math.floor(camera.y / overlaySize) * overlaySize;
             const overlayEndX = overlayStartX + canvas.width + overlaySize;

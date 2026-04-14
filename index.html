@@ -268,10 +268,10 @@
                 groundAlt: '#e0f0f8'
             },
             'FOREST': { 
-                bg: '#0a1f0a', 
-                grid: 'rgba(50, 150, 50, 0.15)',
-                ground: '#1a3d1a',
-                groundAlt: '#0f2f0f'
+                bg: '#1a2a15', 
+                grid: 'rgba(100, 160, 60, 0.12)',
+                ground: '#2d4a25',
+                groundAlt: '#3a5a30'
             },
             'VOLCANO': { 
                 bg: '#1a0505', 
@@ -518,9 +518,20 @@
                             }
                             break;
                         case 'FOREST':
-                            type = Math.random() > 0.3 ? 'tree' : 'bush';
-                            size = type === 'tree' ? 50 + Math.random() * 40 : 20 + Math.random() * 15;
-                            color = type === 'tree' ? '#228b22' : '#32cd32';
+                            const forestRand = Math.random();
+                            if (forestRand > 0.5) {
+                                type = 'tall_tree';
+                                size = 80 + Math.random() * 60;
+                                color = '#3d6b35';
+                            } else if (forestRand > 0.2) {
+                                type = 'tree';
+                                size = 50 + Math.random() * 40;
+                                color = '#2d8b3d';
+                            } else {
+                                type = 'bush';
+                                size = 20 + Math.random() * 15;
+                                color = '#4a9a3a';
+                            }
                             break;
                         case 'VOLCANO':
                             type = Math.random() > 0.6 ? 'rock' : 'lava';
@@ -595,9 +606,16 @@
                             color = '#e8f4f8';
                             break;
                         case 'FOREST':
-                            type = 'tree';
-                            size = 80 + Math.random() * 50;
-                            color = '#1a5c1a';
+                            const forestSpecialRand = Math.random();
+                            if (forestSpecialRand > 0.5) {
+                                type = 'tall_tree';
+                                size = 120 + Math.random() * 60;
+                                color = '#2d5a2d';
+                            } else {
+                                type = 'tree';
+                                size = 90 + Math.random() * 40;
+                                color = '#3a7a3a';
+                            }
                             break;
                         case 'VOLCANO':
                             type = Math.random() > 0.7 ? 'volcano' : 'rock';
@@ -1031,6 +1049,9 @@
                     } else if (biome === 'CITY') {
                         // City biome - draw roads
                         drawCityRoads(x, y, screenX, screenY, tileSize);
+                    } else if (biome === 'FOREST') {
+                        // Forest biome - draw forest ground
+                        drawForestGround(x, y, screenX, screenY, tileSize);
                     } else {
                         // Add texture pattern for other biomes
                         if ((x + y) % (tileSize * 2) < tileSize) {
@@ -1181,6 +1202,67 @@
             ctx.globalAlpha = 0.5;
             ctx.fillRect(screenX, screenY, tileSize, tileSize * 0.15);
             ctx.fillRect(screenX, screenY + tileSize * 0.85, tileSize, tileSize * 0.15);
+            
+            ctx.restore();
+        }
+        
+        function drawForestGround(x, y, screenX, screenY, tileSize) {
+            // Draw forest ground with dappled sunlight and paths
+            ctx.save();
+            
+            // Base forest floor
+            ctx.fillStyle = '#3d5a35';
+            ctx.fillRect(screenX, screenY, tileSize, tileSize);
+            
+            // Dappled sunlight spots
+            ctx.fillStyle = '#6a9a50';
+            for (let i = 0; i < 8; i++) {
+                const sx = screenX + Math.random() * tileSize;
+                const sy = screenY + Math.random() * tileSize;
+                const size = 10 + Math.random() * 25;
+                ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+                ctx.beginPath();
+                ctx.arc(sx, sy, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Forest path (winding)
+            ctx.strokeStyle = '#5a4a3a';
+            ctx.lineWidth = 15;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            const pathOffset = (x + y) * 0.1;
+            for (let px = 0; px <= tileSize; px += 10) {
+                const py = screenY + tileSize / 2 + Math.sin((px + pathOffset) * 0.05) * 30;
+                if (px === 0) ctx.moveTo(screenX + px, py);
+                else ctx.lineTo(screenX + px, py);
+            }
+            ctx.stroke();
+            
+            // Grass tufts
+            ctx.fillStyle = '#4a7a3a';
+            ctx.globalAlpha = 0.5;
+            for (let i = 0; i < 12; i++) {
+                const gx = screenX + Math.random() * tileSize;
+                const gy = screenY + Math.random() * tileSize;
+                ctx.beginPath();
+                ctx.moveTo(gx, gy);
+                ctx.lineTo(gx - 3, gy - 8);
+                ctx.lineTo(gx + 3, gy - 8);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Fallen leaves
+            ctx.fillStyle = '#8a6a3a';
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < 10; i++) {
+                const lx = screenX + Math.random() * tileSize;
+                const ly = screenY + Math.random() * tileSize;
+                ctx.beginPath();
+                ctx.ellipse(lx, ly, 3, 2, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
             
             ctx.restore();
         }
@@ -2107,6 +2189,49 @@
                         ctx.lineTo(screenX + obj.size * 0.3, screenY - obj.size * 0.3);
                         ctx.closePath();
                         ctx.fill();
+                        break;
+                        
+                    case 'tall_tree':
+                        // Tall forest tree with thin trunk and canopy
+                        ctx.save();
+                        
+                        // Tall thin trunk
+                        ctx.fillStyle = '#4a3a2a';
+                        ctx.fillRect(screenX - obj.size * 0.06, screenY - obj.size * 0.1, obj.size * 0.12, obj.size * 1.1);
+                        
+                        // Trunk texture lines
+                        ctx.strokeStyle = '#3a2a1a';
+                        ctx.lineWidth = 1;
+                        for (let i = 0; i < 5; i++) {
+                            const ty = screenY + obj.size * 0.8 - i * obj.size * 0.2;
+                            ctx.beginPath();
+                            ctx.moveTo(screenX - obj.size * 0.04, ty);
+                            ctx.lineTo(screenX + obj.size * 0.04, ty);
+                            ctx.stroke();
+                        }
+                        
+                        // Canopy (oval shaped, like deciduous tree)
+                        ctx.fillStyle = obj.color;
+                        // Main canopy
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY - obj.size * 0.6, obj.size * 0.35, obj.size * 0.45, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Sunlight highlights on canopy
+                        ctx.fillStyle = '#6aba5a';
+                        ctx.globalAlpha = 0.4;
+                        ctx.beginPath();
+                        ctx.ellipse(screenX - obj.size * 0.1, screenY - obj.size * 0.7, obj.size * 0.15, obj.size * 0.2, -0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Shadow under canopy
+                        ctx.fillStyle = '#1a3a1a';
+                        ctx.globalAlpha = 0.3;
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY + obj.size * 0.1, obj.size * 0.25, obj.size * 0.08, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.restore();
                         break;
                         
                     case 'snow_pine':

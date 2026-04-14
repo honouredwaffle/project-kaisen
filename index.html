@@ -1180,7 +1180,7 @@
                 if (boss.hp <= 0) {
                     activeDisasterCurse = null;
                     disasterNotification = { text: 'DISASTER CURSE DEFEATED!', color: '#00ff00' };
-                    disasterNotifTimer = 180;
+                    disasterNotifTimer = 600; // 10 seconds at 60fps
                 }
             } else {
                 // Check for spawn
@@ -1224,7 +1224,7 @@
             };
             
             disasterNotification = { text: `${curseData.name} HAS APPEARED!`, color: '#ff0000' };
-            disasterNotifTimer = 300;
+            disasterNotifTimer = 600; // 10 seconds at 60fps
         }
         
         function drawDisasterCurse() {

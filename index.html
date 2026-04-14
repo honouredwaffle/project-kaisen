@@ -2574,50 +2574,63 @@
         function activateDomain() {
             playerDomain.active = true;
             playerDomain.phase = 'expanding';
-            playerDomain.phaseTimer = 60; // 1 second to expand
+            playerDomain.phaseTimer = 90; // 1.5 seconds to expand
             playerDomain.radius = 0;
             playerDomain.duration = 1800; // 30 seconds
             playerDomain.frozenEnemies = [];
             
-            // Initialize speed lines
+            // Initialize dramatic speed lines (more intense, radiating from center)
             playerDomain.lines = [];
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 150; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 500;
                 playerDomain.lines.push({
-                    x: (Math.random() - 0.5) * canvas.width * 2,
-                    y: (Math.random() - 0.5) * canvas.height * 2,
-                    z: Math.random() * 1000, // Depth for 3D effect
-                    speed: 20 + Math.random() * 30,
-                    color: ['#4444ff', '#ff4444', '#aa44ff', '#ffffff'][Math.floor(Math.random() * 4)],
-                    length: 50 + Math.random() * 100
+                    angle: angle,
+                    dist: dist,
+                    z: Math.random() * 800,
+                    speed: 30 + Math.random() * 40,
+                    color: ['#4488ff', '#ff4444', '#aa44ff', '#ffffff', '#44ffff'][Math.floor(Math.random() * 5)],
+                    length: 100 + Math.random() * 200,
+                    width: 2 + Math.random() * 4
                 });
             }
             
-            // Initialize stars
+            // Initialize stars (more numerous, deeper space feel)
             playerDomain.stars = [];
-            for (let i = 0; i < 200; i++) {
+            for (let i = 0; i < 300; i++) {
                 playerDomain.stars.push({
+                    x: (Math.random() - 0.5) * 2500,
+                    y: (Math.random() - 0.5) * 2500,
+                    size: 0.5 + Math.random() * 2.5,
+                    twinkle: Math.random() * Math.PI * 2,
+                    brightness: 0.3 + Math.random() * 0.7
+                });
+            }
+            
+            // Initialize galaxies (more dramatic)
+            playerDomain.galaxies = [];
+            for (let i = 0; i < 6; i++) {
+                playerDomain.galaxies.push({
                     x: (Math.random() - 0.5) * 2000,
                     y: (Math.random() - 0.5) * 2000,
-                    size: Math.random() * 2,
-                    twinkle: Math.random() * Math.PI * 2
-                });
-            }
-            
-            // Initialize galaxies
-            playerDomain.galaxies = [];
-            for (let i = 0; i < 5; i++) {
-                playerDomain.galaxies.push({
-                    x: (Math.random() - 0.5) * 1500,
-                    y: (Math.random() - 0.5) * 1500,
-                    size: 100 + Math.random() * 150,
+                    size: 150 + Math.random() * 200,
                     rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.002,
-                    color: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`
+                    rotationSpeed: (Math.random() - 0.5) * 0.003,
+                    color: `hsl(${Math.random() * 80 + 220}, 80%, 65%)`,
+                    brightness: 0.6 + Math.random() * 0.4
                 });
             }
             
             // Initialize paint splats (empty initially)
             playerDomain.paintSplats = [];
+            
+            // Japanese text for Unlimited Void
+            playerDomain.domainText = {
+                japanese: '無量空処',
+                english: 'UNLIMITED VOID',
+                opacity: 0,
+                showTime: 0
+            };
             
             // Freeze all enemies currently in range
             for (const spirit of cursedSpirits) {
@@ -3134,33 +3147,58 @@
             ctx.arc(centerX, centerY, playerDomain.radius, 0, Math.PI * 2);
             ctx.clip();
             
-            // Fill with deep space void
+            // Fill with infinite void - darker at edges, deep purple-black center
             const voidGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, playerDomain.radius);
-            voidGrad.addColorStop(0, '#0a0014');
-            voidGrad.addColorStop(0.5, '#050008');
+            voidGrad.addColorStop(0, '#0d0020');
+            voidGrad.addColorStop(0.3, '#080014');
+            voidGrad.addColorStop(0.7, '#030008');
             voidGrad.addColorStop(1, '#000000');
             ctx.fillStyle = voidGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw speed lines during lines phase
+            // Draw dramatic speed lines during lines/expanding phase
             if (playerDomain.phase === 'lines' || playerDomain.phase === 'expanding') {
                 ctx.save();
                 ctx.translate(centerX, centerY);
+                
+                // Draw radiating speed lines from center
                 for (const line of playerDomain.lines) {
-                    const scale = 500 / line.z;
-                    const x = line.x * scale;
-                    const y = line.y * scale;
-                    const length = line.length * scale;
-                    const width = Math.max(1, 3 * scale);
+                    // Calculate 3D perspective position
+                    const perspective = 500 / (line.z + 100);
+                    const x = Math.cos(line.angle) * line.dist * perspective;
+                    const y = Math.sin(line.angle) * line.dist * perspective;
+                    
+                    // Line extends outward from center
+                    const length = line.length * perspective;
+                    const width = line.width * perspective;
                     
                     ctx.strokeStyle = line.color;
                     ctx.lineWidth = width;
-                    ctx.globalAlpha = Math.min(1, (1000 - line.z) / 200);
+                    ctx.globalAlpha = Math.min(1, perspective * 0.5);
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = line.color;
+                    
                     ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x - (x / line.z) * length, y - (y / line.z) * length);
+                    ctx.moveTo(x * 0.1, y * 0.1); // Start near center
+                    ctx.lineTo(x + Math.cos(line.angle) * length, y + Math.sin(line.angle) * length);
                     ctx.stroke();
+                    ctx.shadowBlur = 0;
                 }
+                
+                // Central vortex effect during lines phase
+                if (playerDomain.phase === 'lines') {
+                    ctx.globalAlpha = 0.3;
+                    for (let i = 0; i < 20; i++) {
+                        const angle = (Date.now() * 0.002) + (i / 20) * Math.PI * 2;
+                        const r = 50 + i * 15;
+                        ctx.strokeStyle = i % 2 === 0 ? '#4444ff' : '#ff4444';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, angle, angle + Math.PI * 0.3);
+                        ctx.stroke();
+                    }
+                }
+                
                 ctx.restore();
             }
             
@@ -3169,10 +3207,13 @@
                 ctx.save();
                 ctx.translate(centerX, centerY);
                 
-                // Draw stars
+                // Draw distant stars with parallax effect
                 for (const star of playerDomain.stars) {
-                    const twinkle = Math.sin(Date.now() * 0.005 + star.twinkle) * 0.5 + 0.5;
-                    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + twinkle * 0.7})`;
+                    const twinkle = Math.sin(Date.now() * 0.003 + star.twinkle) * 0.5 + 0.5;
+                    const brightness = star.brightness * (0.5 + twinkle * 0.5);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                    ctx.shadowBlur = star.size * 2;
+                    ctx.shadowColor = '#ffffff';
                     ctx.beginPath();
                     ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                     ctx.fill();
@@ -3276,23 +3317,68 @@
                 ctx.restore();
             }
             
-            // Draw domain border
+            // Draw Unlimited Void text during cosmic/active phases
+            if (playerDomain.phase !== 'expanding' && playerDomain.phase !== 'lines') {
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                
+                // Fade in text
+                const textAlpha = Math.min(1, (1800 - playerDomain.duration) / 60) * 0.8;
+                
+                // Japanese text - 無量空処 (Muryōkūsho - Unlimited Void)
+                ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha})`;
+                ctx.font = 'bold 48px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#aa44ff';
+                ctx.fillText('無量空処', 0, -30);
+                
+                // English subtitle
+                ctx.font = 'bold 18px "Segoe UI", sans-serif';
+                ctx.fillStyle = `rgba(200, 200, 255, ${textAlpha * 0.8})`;
+                ctx.fillText('UNLIMITED VOID', 0, 15);
+                
+                // Decorative lines
+                ctx.strokeStyle = `rgba(170, 68, 255, ${textAlpha * 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-120, 35);
+                ctx.lineTo(120, 35);
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Draw domain border - glowing purple barrier
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#660066';
             ctx.strokeStyle = '#440044';
-            ctx.lineWidth = 3;
-            ctx.globalAlpha = 0.8;
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.9;
             ctx.beginPath();
             ctx.arc(centerX, centerY, playerDomain.radius, 0, Math.PI * 2);
             ctx.stroke();
             
-            // Pulsing border effect
+            // Inner pulsing border
             const pulse = Math.sin(Date.now() * 0.005) * 0.3 + 0.7;
-            ctx.strokeStyle = '#660066';
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = pulse * 0.5;
+            ctx.strokeStyle = '#aa44ff';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = pulse * 0.6;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, playerDomain.radius - 5, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, playerDomain.radius - 8, 0, Math.PI * 2);
             ctx.stroke();
             
+            // Outer glow ring
+            ctx.strokeStyle = '#440066';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = pulse * 0.3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, playerDomain.radius + 10, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
             ctx.restore();
         }
         

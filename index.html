@@ -358,14 +358,15 @@
         generateCursedSpirits();
         
         function generateBossStructures() {
-            // Add structures at each boss spawn location
+            // Add unique menacing structures at each boss spawn location
             for (const curse of Object.values(DISASTER_CURSES)) {
                 for (const loc of curse.spawnLocations) {
-                    // Create arena/platform around boss spawn
-                    const structureCount = 15;
+                    // Create a menacing arena with unique structures based on biome
+                    const structureCount = 8; // Fewer, more impactful structures
+                    
                     for (let s = 0; s < structureCount; s++) {
                         const angle = (s / structureCount) * Math.PI * 2;
-                        const dist = 150 + Math.random() * 100;
+                        const dist = 200 + Math.random() * 80; // More consistent distance
                         const x = loc.x + Math.cos(angle) * dist;
                         const y = loc.y + Math.sin(angle) * dist;
                         
@@ -373,38 +374,70 @@
                         
                         switch(curse.biome) {
                             case 'VOLCANO':
-                                type = Math.random() > 0.5 ? 'volcano' : 'rock';
-                                size = type === 'volcano' ? 80 : 40;
-                                color = type === 'volcano' ? '#5a2a20' : '#444';
+                                // Jagged obsidian pillars and volcanic vents
+                                type = s % 2 === 0 ? 'obsidian_pillar' : 'volcanic_vent';
+                                size = type === 'obsidian_pillar' ? 60 + Math.random() * 40 : 30;
+                                color = type === 'obsidian_pillar' ? '#1a0a0a' : '#ff2200';
                                 break;
                             case 'FOREST':
-                                type = 'tree';
-                                size = 70 + Math.random() * 30;
-                                color = '#1a4a1a';
+                                // Twisted ancient trees and corrupted groves
+                                type = s % 2 === 0 ? 'ancient_tree' : 'corrupted_grove';
+                                size = type === 'ancient_tree' ? 90 + Math.random() * 30 : 50;
+                                color = type === 'ancient_tree' ? '#0a1a0a' : '#4a0044';
                                 break;
                             case 'CITY':
-                                type = 'building';
-                                size = 100 + Math.random() * 50;
-                                color = '#2a2a4a';
+                                // Ruined skyscrapers and industrial towers
+                                type = s % 2 === 0 ? 'ruined_tower' : 'industrial_pillar';
+                                size = type === 'ruined_tower' ? 120 + Math.random() * 60 : 40;
+                                color = type === 'ruined_tower' ? '#1a1a2e' : '#2a1a1a';
                                 break;
                             default:
-                                type = 'rock';
-                                size = 40;
-                                color = '#666';
+                                type = 'menhir';
+                                size = 50 + Math.random() * 20;
+                                color = '#2a2a2a';
                         }
                         
-                        biomeObjects.push({ x, y, type, size, color, biome: curse.biome, isBossStructure: true });
+                        biomeObjects.push({ 
+                            x, y, type, size, color, 
+                            biome: curse.biome, 
+                            isBossStructure: true,
+                            angle: angle // Store angle for directional drawing
+                        });
                     }
                     
-                    // Central altar/platform
+                    // Central menacing altar - unique for each boss
+                    let centerType, centerSize, centerColor;
+                    switch(curse.biome) {
+                        case 'VOLCANO':
+                            centerType = 'lava_altar';
+                            centerSize = 150;
+                            centerColor = '#ff4400';
+                            break;
+                        case 'FOREST':
+                            centerType = 'corrupted_shrine';
+                            centerSize = 130;
+                            centerColor = '#660066';
+                            break;
+                        case 'CITY':
+                            centerType = 'ruined_cathedral';
+                            centerSize = 160;
+                            centerColor = '#1a1a3a';
+                            break;
+                        default:
+                            centerType = 'dark_altar';
+                            centerSize = 120;
+                            centerColor = '#333';
+                    }
+                    
                     biomeObjects.push({
                         x: loc.x,
                         y: loc.y,
-                        type: curse.biome === 'VOLCANO' ? 'lava' : (curse.biome === 'FOREST' ? 'tree' : 'building'),
-                        size: 120,
-                        color: curse.color,
+                        type: centerType,
+                        size: centerSize,
+                        color: centerColor,
                         biome: curse.biome,
-                        isBossStructure: true
+                        isBossStructure: true,
+                        isCenter: true
                     });
                 }
             }
@@ -416,17 +449,38 @@
             // Generate boss structures first
             generateBossStructures();
             
+            // Helper to check if position is too close to existing objects
+            function isTooClose(x, y, minDist) {
+                for (const obj of biomeObjects) {
+                    const dx = obj.x - x;
+                    const dy = obj.y - y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < minDist + obj.size) return true;
+                }
+                return false;
+            }
+            
             // Generate objects for each biome (radial layout)
             for (const biome of BIOMES) {
                 const center = BIOME_CENTERS[biome];
                 
-                // Regular objects
-                for (let j = 0; j < OBJECT_COUNT_PER_BIOME; j++) {
+                // Regular objects - with spacing check
+                let attempts = 0;
+                for (let j = 0; j < OBJECT_COUNT_PER_BIOME && attempts < OBJECT_COUNT_PER_BIOME * 3; j++) {
+                    attempts++;
+                    
                     // Random position within biome radius
                     const angle = Math.random() * Math.PI * 2;
                     const dist = Math.random() * BIOME_SIZE * 0.8;
                     const x = center.x + Math.cos(angle) * dist;
                     const y = center.y + Math.sin(angle) * dist;
+                    
+                    // Check minimum distance from other objects (prevent stacking)
+                    const minSpacing = 80;
+                    if (isTooClose(x, y, minSpacing)) {
+                        j--; // Try again
+                        continue;
+                    }
                     
                     let type, size, color;
                     
@@ -461,13 +515,23 @@
                     biomeObjects.push({ x, y, type, size, color, biome });
                 }
                 
-                // Special structures
-                for (let j = 0; j < SPECIAL_OBJECT_COUNT; j++) {
+                // Special structures - with spacing check
+                let specialAttempts = 0;
+                for (let j = 0; j < SPECIAL_OBJECT_COUNT && specialAttempts < SPECIAL_OBJECT_COUNT * 3; j++) {
+                    specialAttempts++;
+                    
                     // Random position within biome radius (radial system)
                     const angle = Math.random() * Math.PI * 2;
                     const dist = Math.random() * BIOME_SIZE * 0.6; // Keep special structures more central
                     const x = center.x + Math.cos(angle) * dist;
                     const y = center.y + Math.sin(angle) * dist;
+                    
+                    // Check minimum distance (special structures need more space)
+                    const minSpacing = 150;
+                    if (isTooClose(x, y, minSpacing)) {
+                        j--; // Try again
+                        continue;
+                    }
                     
                     let type, size, color;
                     

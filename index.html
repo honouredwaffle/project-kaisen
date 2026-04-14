@@ -3280,8 +3280,8 @@
                 ctx.restore();
             }
             
-            // Draw cosmic background (stars and galaxies)
-            if (playerDomain.phase !== 'expanding') {
+            // Draw cosmic background (stars and galaxies) - ONLY after speed lines phase
+            if (playerDomain.phase === 'cosmic' || playerDomain.phase === 'active') {
                 ctx.save();
                 ctx.translate(domainScreenX, domainScreenY);
                 

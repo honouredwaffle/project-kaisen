@@ -2947,8 +2947,9 @@
             
             // Draw hold phase effects
             if (hollowPurple.holdTime > 0) {
-                const holdProgress = 1 - (hollowPurple.holdTime / 90);
+                const holdProgress = 1 - (hollowPurple.holdTime / 180);
                 const pulse = Math.sin(time * 3) * 0.5 + 0.5;
+                const fastPulse = Math.sin(time * 6) * 0.5 + 0.5;
                 
                 ctx.save();
                 
@@ -3717,46 +3718,39 @@
             const centerY = mapY + mapHeight / 2;
             const mapRadius = Math.min(mapWidth, mapHeight) / 2 - 10;
             
-            // Draw pie slice sectors for each biome
-            // Angles: Volcano (top-left), Sand (top-right), City (bottom-right), Snow (bottom-left)
-            const sectors = [
-                { biome: 'VOLCANO', startAngle: -Math.PI * 0.75, endAngle: -Math.PI * 0.25 },
-                { biome: 'SAND', startAngle: -Math.PI * 0.25, endAngle: Math.PI * 0.25 },
-                { biome: 'CITY', startAngle: Math.PI * 0.25, endAngle: Math.PI * 0.75 },
-                { biome: 'SNOW', startAngle: Math.PI * 0.75, endAngle: Math.PI * 1.25 }
-            ];
+            // Draw biome zones at actual diagonal positions
+            const mapScale = mapRadius / (BIOME_SIZE * 1.5);
             
-            // Draw outer biome sectors
-            for (const sector of sectors) {
-                const colors = BIOME_COLORS[sector.biome];
+            // Draw each biome as a circle at its actual position
+            for (const biome of BIOMES) {
+                if (biome === 'FOREST') continue; // Forest drawn separately in center
                 
-                // Fill sector
+                const center = BIOME_CENTERS[biome];
+                const colors = BIOME_COLORS[biome];
+                const bx = centerX + center.x * mapScale;
+                const by = centerY + center.y * mapScale;
+                const biomeRadius = mapRadius * 0.4;
+                
+                // Biome zone circle
                 ctx.fillStyle = colors.ground;
-                ctx.globalAlpha = 0.5;
+                ctx.globalAlpha = 0.4;
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, mapRadius, sector.startAngle, sector.endAngle);
-                ctx.closePath();
+                ctx.arc(bx, by, biomeRadius, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Sector border
+                // Border
                 ctx.globalAlpha = 0.8;
                 ctx.strokeStyle = colors.grid;
                 ctx.lineWidth = 2;
                 ctx.stroke();
                 
-                // Label position (middle of sector, pushed outward)
-                const midAngle = (sector.startAngle + sector.endAngle) / 2;
-                const labelRadius = mapRadius * 0.7;
-                const lx = centerX + Math.cos(midAngle) * labelRadius;
-                const ly = centerY + Math.sin(midAngle) * labelRadius;
-                
+                // Label
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 9px "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.globalAlpha = 1;
-                ctx.fillText(sector.biome, lx, ly);
+                ctx.fillText(biome, bx, by);
             }
             
             // Draw Forest center (inner circle)
@@ -3777,8 +3771,7 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('FOREST', centerX, centerY);
             
-            // Scale for world to minimap conversion
-            const mapScale = mapRadius / (BIOME_SIZE * 1.2);
+            // Scale already defined above
             
             // Disaster curse spawn locations (skull icons)
             for (const curse of Object.values(DISASTER_CURSES)) {

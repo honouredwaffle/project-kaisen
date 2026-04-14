@@ -124,7 +124,7 @@
                 speed: 2.5,
                 size: 60,
                 color: '#ff3300',
-                spawnLocations: [{x: -BIOME_SIZE - 2000, y: -3000}, {x: -BIOME_SIZE + 3000, y: 4000}] // VOLCANO: left of forest
+                spawnLocations: [{x: -BIOME_SIZE * 0.8 - 2000, y: -BIOME_SIZE * 0.8 - 2000}, {x: -BIOME_SIZE * 0.8 + 3000, y: -BIOME_SIZE * 0.8 + 2000}] // VOLCANO: top-left
             },
             'HANAMI': {
                 name: 'HANAMI',
@@ -144,7 +144,7 @@
                 speed: 4,
                 size: 50,
                 color: '#4a0080',
-                spawnLocations: [{x: BIOME_SIZE - 2000, y: -3000}, {x: BIOME_SIZE + 3000, y: 4000}] // CITY: right of forest
+                spawnLocations: [{x: BIOME_SIZE * 0.8 + 2000, y: BIOME_SIZE * 0.8 + 2000}, {x: BIOME_SIZE * 0.8 - 2000, y: BIOME_SIZE * 0.8 + 3000}] // CITY: bottom-right
             }
         };
         
@@ -226,21 +226,21 @@
         const WORLD_HEIGHT = 50000;
         
         // Biomes: Snow, Forest, Volcano, City, Sand
-        // Layout: Forest in center, others around it
-        //         [Sand]
-        //           |
-        // [Volcano]—[Forest]—[City]
-        //           |
-        //        [Snow]
+        // New Layout: Forest in center, others in corners
+        //    [Volcano]    [Sand]
+        //         \      /
+        //          [Forest]
+        //         /      \
+        //    [Snow]      [City]
         const BIOMES = ['SNOW', 'FOREST', 'VOLCANO', 'CITY', 'SAND'];
         
-        // Biome center positions (Forest at 0,0)
+        // Biome center positions (Forest at 0,0) - diagonal layout
         const BIOME_CENTERS = {
             'FOREST': { x: 0, y: 0 },
-            'VOLCANO': { x: -BIOME_SIZE, y: 0 },
-            'CITY': { x: BIOME_SIZE, y: 0 },
-            'SNOW': { x: 0, y: BIOME_SIZE },
-            'SAND': { x: 0, y: -BIOME_SIZE }
+            'VOLCANO': { x: -BIOME_SIZE * 0.8, y: -BIOME_SIZE * 0.8 },  // Top-left
+            'SAND': { x: BIOME_SIZE * 0.8, y: -BIOME_SIZE * 0.8 },       // Top-right
+            'SNOW': { x: -BIOME_SIZE * 0.8, y: BIOME_SIZE * 0.8 },       // Bottom-left
+            'CITY': { x: BIOME_SIZE * 0.8, y: BIOME_SIZE * 0.8 }         // Bottom-right
         };
         
         // Biome colors - more distinct and realistic
@@ -3526,14 +3526,35 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
             
-            // Biome zones
-            for (let i = 0; i < 5; i++) {
-                const biomeX = mapX + (i * BIOME_WIDTH) * scaleX;
-                const biomeWidth = BIOME_WIDTH * scaleX;
-                const colors = BIOME_COLORS[BIOMES[i]];
+            // Biome zones - diagonal layout
+            const centerX = mapX + mapWidth / 2;
+            const centerY = mapY + mapHeight / 2;
+            const biomeRadius = Math.min(mapWidth, mapHeight) * 0.35;
+            
+            for (const biome of BIOMES) {
+                const center = BIOME_CENTERS[biome];
+                const colors = BIOME_COLORS[biome];
+                const bx = centerX + center.x * scaleX;
+                const by = centerY + center.y * scaleY;
+                
+                // Draw biome as a circle on the minimap
                 ctx.fillStyle = colors.ground;
-                ctx.fillRect(biomeX, mapY, biomeWidth, mapHeight);
+                ctx.beginPath();
+                ctx.arc(bx, by, biomeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Biome label
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.font = '10px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(biome, bx, by);
             }
+            
+            // Draw forest center specially
+            ctx.fillStyle = BIOME_COLORS['FOREST'].ground;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, biomeRadius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
             
             // Disaster curse spawn locations
             for (const curse of Object.values(DISASTER_CURSES)) {

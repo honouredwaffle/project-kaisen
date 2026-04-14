@@ -3381,7 +3381,6 @@
         }
         
         function drawGame() {
-            try {
             // Clear with dark background
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -3442,12 +3441,6 @@
             ctx.fillText(`X: ${Math.floor(player.x)} Y: ${Math.floor(player.y)}`, 20, 95);
             ctx.fillStyle = BIOME_COLORS[currentBiome].grid.replace('0.15', '1');
             ctx.fillText(`BIOME: ${currentBiome}`, 20, 118);
-            } catch (e) {
-                console.error('Game error:', e);
-                ctx.fillStyle = '#ff0000';
-                ctx.font = '20px sans-serif';
-                ctx.fillText('ERROR: ' + e.message, 100, 100);
-            }
         }
         
         function addDamageCounter(damage) {
@@ -3830,8 +3823,8 @@
             }
             
             // Player dot
-            const playerMapX = mapX + (player.x + WORLD_WIDTH/2) * scaleX;
-            const playerMapY = mapY + (player.y + WORLD_HEIGHT/2) * scaleY;
+            const playerMapX = centerX + player.x * mapScale;
+            const playerMapY = centerY + player.y * mapScale;
             
             ctx.fillStyle = '#00ff00';
             ctx.shadowColor = '#00ff00';

@@ -274,10 +274,10 @@
                 groundAlt: '#3a5a30'
             },
             'VOLCANO': { 
-                bg: '#1a0505', 
-                grid: 'rgba(255, 80, 30, 0.2)',
-                ground: '#2d1810',
-                groundAlt: '#1a0f0a'
+                bg: '#0f0808', 
+                grid: 'rgba(255, 60, 20, 0.25)',
+                ground: '#1a1210',
+                groundAlt: '#251a15'
             },
             'CITY': { 
                 bg: '#2a2a35', 
@@ -540,18 +540,18 @@
                             break;
                         case 'CITY':
                             const cityTypeRand = Math.random();
-                            if (cityTypeRand > 0.6) {
+                            if (cityTypeRand > 0.3) {
                                 type = 'building';
                                 size = 60 + Math.random() * 80;
                                 color = `hsl(${200 + Math.random() * 40}, 30%, ${35 + Math.random() * 15}%)`;
-                            } else if (cityTypeRand > 0.3) {
-                                type = 'street_lamp';
-                                size = 30 + Math.random() * 15;
-                                color = '#3a3a45';
                             } else if (cityTypeRand > 0.15) {
                                 type = 'shop';
                                 size = 40 + Math.random() * 25;
                                 color = `hsl(${0 + Math.random() * 40}, 45%, ${50 + Math.random() * 15}%)`;
+                            } else if (cityTypeRand > 0.05) {
+                                type = 'street_lamp';
+                                size = 30 + Math.random() * 15;
+                                color = '#3a3a45';
                             } else {
                                 type = 'car';
                                 size = 20 + Math.random() * 10;
@@ -590,8 +590,8 @@
                     const x = center.x + Math.cos(angle) * dist;
                     const y = center.y + Math.sin(angle) * dist;
                     
-                    // Check minimum distance (special structures need more space)
-                    const minSpacing = 150;
+                    // Check minimum distance (special structures need more space, except city)
+                    const minSpacing = biome === 'CITY' ? 80 : 150;
                     if (isTooClose(x, y, minSpacing)) {
                         j--; // Try again
                         continue;
@@ -1052,6 +1052,9 @@
                     } else if (biome === 'FOREST') {
                         // Forest biome - draw forest ground
                         drawForestGround(x, y, screenX, screenY, tileSize);
+                    } else if (biome === 'VOLCANO') {
+                        // Volcano biome - draw lava cracks
+                        drawVolcanoGround(x, y, screenX, screenY, tileSize);
                     } else {
                         // Add texture pattern for other biomes
                         if ((x + y) % (tileSize * 2) < tileSize) {
@@ -1261,6 +1264,69 @@
                 const ly = screenY + Math.random() * tileSize;
                 ctx.beginPath();
                 ctx.ellipse(lx, ly, 3, 2, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        
+        function drawVolcanoGround(x, y, screenX, screenY, tileSize) {
+            // Draw volcanic ground with lava cracks and flows
+            ctx.save();
+            
+            // Base dark volcanic rock
+            ctx.fillStyle = '#1a1210';
+            ctx.fillRect(screenX, screenY, tileSize, tileSize);
+            
+            // Lava cracks - glowing orange lines
+            ctx.strokeStyle = '#ff4400';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ff6600';
+            ctx.globalAlpha = 0.6;
+            
+            // Random crack pattern based on position
+            const crackSeed = Math.floor((x + y) / 100);
+            for (let i = 0; i < 5; i++) {
+                const startX = screenX + ((crackSeed * 137 + i * 53) % tileSize);
+                const startY = screenY + ((crackSeed * 241 + i * 71) % tileSize);
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                
+                let cx = startX;
+                let cy = startY;
+                for (let j = 0; j < 4; j++) {
+                    cx += (Math.random() - 0.5) * 60;
+                    cy += (Math.random() - 0.5) * 60;
+                    ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+            }
+            
+            // Larger lava pools
+            ctx.fillStyle = '#ff5500';
+            ctx.shadowBlur = 20;
+            for (let i = 0; i < 3; i++) {
+                const poolX = screenX + ((crackSeed * 89 + i * 37) % (tileSize - 40)) + 20;
+                const poolY = screenY + ((crackSeed * 167 + i * 43) % (tileSize - 40)) + 20;
+                const poolSize = 8 + (crackSeed % 12);
+                ctx.globalAlpha = 0.4 + (Math.sin(Date.now() * 0.002 + i) * 0.2);
+                ctx.beginPath();
+                ctx.arc(poolX, poolY, poolSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Dark rock texture
+            ctx.fillStyle = '#0f0a08';
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < 15; i++) {
+                const rx = screenX + Math.random() * tileSize;
+                const ry = screenY + Math.random() * tileSize;
+                const rsize = 2 + Math.random() * 6;
+                ctx.beginPath();
+                ctx.arc(rx, ry, rsize, 0, Math.PI * 2);
                 ctx.fill();
             }
             

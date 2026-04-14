@@ -3134,7 +3134,7 @@
             }
         }
         
-        function drawPlayerDomain() {
+        function drawPlayerDomainBackground() {
             if (!playerDomain.active) return;
             
             const centerX = canvas.width / 2;
@@ -3155,6 +3155,56 @@
             voidGrad.addColorStop(1, '#000000');
             ctx.fillStyle = voidGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw floor grid for movement reference (during cosmic/active phases)
+            if (playerDomain.phase !== 'expanding' && playerDomain.phase !== 'lines') {
+                ctx.save();
+                ctx.translate(centerX - player.x, centerY - player.y);
+                
+                // Grid that moves with player to show movement
+                const gridSize = 100;
+                const gridOffsetX = Math.floor(player.x / gridSize) * gridSize;
+                const gridOffsetY = Math.floor(player.y / gridSize) * gridSize;
+                
+                ctx.strokeStyle = 'rgba(100, 50, 150, 0.15)';
+                ctx.lineWidth = 1;
+                
+                // Draw grid lines within domain radius
+                for (let x = gridOffsetX - playerDomain.maxRadius; x <= gridOffsetX + playerDomain.maxRadius; x += gridSize) {
+                    const screenX = x;
+                    const distFromCenter = Math.abs(x - player.x);
+                    if (distFromCenter < playerDomain.maxRadius) {
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, gridOffsetY - playerDomain.maxRadius);
+                        ctx.lineTo(screenX, gridOffsetY + playerDomain.maxRadius);
+                        ctx.stroke();
+                    }
+                }
+                for (let y = gridOffsetY - playerDomain.maxRadius; y <= gridOffsetY + playerDomain.maxRadius; y += gridSize) {
+                    const screenY = y;
+                    const distFromCenter = Math.abs(y - player.y);
+                    if (distFromCenter < playerDomain.maxRadius) {
+                        ctx.beginPath();
+                        ctx.moveTo(gridOffsetX - playerDomain.maxRadius, screenY);
+                        ctx.lineTo(gridOffsetX + playerDomain.maxRadius, screenY);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Circular ripple effect at player position to show movement
+                const time = Date.now() * 0.005;
+                for (let i = 0; i < 3; i++) {
+                    const rippleRadius = 50 + i * 40 + (time * 10) % 40;
+                    const alpha = 0.3 - (rippleRadius - 50) / 200;
+                    ctx.strokeStyle = `rgba(150, 100, 200, ${Math.max(0, alpha)})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y, rippleRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            }
             
             // Draw dramatic speed lines during lines/expanding phase
             if (playerDomain.phase === 'lines' || playerDomain.phase === 'expanding') {
@@ -3255,16 +3305,34 @@
                     ctx.restore();
                 }
                 
-                // Draw black hole at center
+                // Draw black hole at center - ENHANCED
                 const bh = playerDomain.blackHole;
                 
-                // Accretion disk
+                // Outer glow
+                ctx.shadowBlur = 50;
+                ctx.shadowColor = '#440066';
+                
+                // Multiple accretion disk layers
                 ctx.save();
                 ctx.rotate(bh.angle);
-                const diskGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, bh.accretionRadius);
-                diskGrad.addColorStop(0, 'rgba(255, 100, 0, 0.8)');
-                diskGrad.addColorStop(0.3, 'rgba(255, 50, 100, 0.5)');
-                diskGrad.addColorStop(0.6, 'rgba(100, 0, 200, 0.3)');
+                
+                // Outer disk
+                const outerGrad = ctx.createRadialGradient(0, 0, 30, 0, 0, bh.accretionRadius * 1.8);
+                outerGrad.addColorStop(0, 'rgba(255, 150, 50, 0.6)');
+                outerGrad.addColorStop(0.4, 'rgba(255, 50, 150, 0.4)');
+                outerGrad.addColorStop(0.7, 'rgba(100, 0, 200, 0.2)');
+                outerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = outerGrad;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, bh.accretionRadius * 2, bh.accretionRadius * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner bright disk
+                const diskGrad = ctx.createRadialGradient(0, 0, 25, 0, 0, bh.accretionRadius);
+                diskGrad.addColorStop(0, 'rgba(255, 200, 100, 0.9)');
+                diskGrad.addColorStop(0.2, 'rgba(255, 100, 50, 0.8)');
+                diskGrad.addColorStop(0.5, 'rgba(200, 50, 150, 0.5)');
+                diskGrad.addColorStop(0.8, 'rgba(100, 0, 200, 0.3)');
                 diskGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = diskGrad;
                 ctx.beginPath();
@@ -3272,12 +3340,20 @@
                 ctx.fill();
                 ctx.restore();
                 
-                // Event horizon (black center)
-                ctx.fillStyle = '#000000';
-                ctx.shadowColor = '#440044';
-                ctx.shadowBlur = 20;
+                // Photon ring (bright ring around event horizon)
+                ctx.strokeStyle = '#ffaa66';
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = 0.8;
                 ctx.beginPath();
-                ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 35, 12, bh.angle * 0.5, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Event horizon (black center) - larger
+                ctx.fillStyle = '#000000';
+                ctx.shadowColor = '#6600aa';
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.arc(0, 0, 30, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
                 
@@ -3317,34 +3393,55 @@
                 ctx.restore();
             }
             
-            // Draw Unlimited Void text during cosmic/active phases
-            if (playerDomain.phase !== 'expanding' && playerDomain.phase !== 'lines') {
+            ctx.restore();
+        }
+        
+        function drawPlayerDomainForeground() {
+            if (!playerDomain.active) return;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            ctx.save();
+            
+            // Draw Unlimited Void text - only for first 3 seconds of cosmic phase
+            const domainTimeElapsed = 1800 - playerDomain.duration;
+            const textDisplayDuration = 180; // 3 seconds at 60fps
+            if (playerDomain.phase !== 'expanding' && playerDomain.phase !== 'lines' && domainTimeElapsed < textDisplayDuration) {
                 ctx.save();
                 ctx.translate(centerX, centerY);
                 
-                // Fade in text
-                const textAlpha = Math.min(1, (1800 - playerDomain.duration) / 60) * 0.8;
+                // Fade in then fade out
+                let textAlpha;
+                if (domainTimeElapsed < 30) {
+                    textAlpha = domainTimeElapsed / 30; // Fade in
+                } else if (domainTimeElapsed > textDisplayDuration - 30) {
+                    textAlpha = (textDisplayDuration - domainTimeElapsed) / 30; // Fade out
+                } else {
+                    textAlpha = 1;
+                }
+                textAlpha *= 0.9;
                 
                 // Japanese text - 無量空処 (Muryōkūsho - Unlimited Void)
                 ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha})`;
-                ctx.font = 'bold 48px "Segoe UI", sans-serif';
+                ctx.font = 'bold 56px "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.shadowBlur = 30;
+                ctx.shadowBlur = 40;
                 ctx.shadowColor = '#aa44ff';
-                ctx.fillText('無量空処', 0, -30);
+                ctx.fillText('無量空処', 0, -35);
                 
                 // English subtitle
-                ctx.font = 'bold 18px "Segoe UI", sans-serif';
+                ctx.font = 'bold 20px "Segoe UI", sans-serif';
                 ctx.fillStyle = `rgba(200, 200, 255, ${textAlpha * 0.8})`;
-                ctx.fillText('UNLIMITED VOID', 0, 15);
+                ctx.fillText('UNLIMITED VOID', 0, 20);
                 
                 // Decorative lines
                 ctx.strokeStyle = `rgba(170, 68, 255, ${textAlpha * 0.5})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(-120, 35);
-                ctx.lineTo(120, 35);
+                ctx.moveTo(-140, 40);
+                ctx.lineTo(140, 40);
                 ctx.stroke();
                 
                 ctx.shadowBlur = 0;
@@ -4197,8 +4294,9 @@
             drawSpiritProjectiles();
             drawCursedSpirits();
             drawDisasterCurse();
-            drawPlayerDomain();
+            drawPlayerDomainBackground(); // Draw domain void/bg before player
             drawPlayer();
+            drawPlayerDomainForeground(); // Draw domain border/text on top
             drawBossHealthBar();
             drawDamageCounter();
             drawMaxBlue();

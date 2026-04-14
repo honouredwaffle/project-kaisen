@@ -3718,57 +3718,70 @@
             const centerY = mapY + mapHeight / 2;
             const mapRadius = Math.min(mapWidth, mapHeight) / 2 - 10;
             
-            // Draw biome zones at actual diagonal positions
-            const mapScale = mapRadius / (BIOME_SIZE * 1.5);
+            // Draw connected biome zones - overlapping large circles for seamless coverage
+            const mapScale = mapRadius / (BIOME_SIZE * 1.2);
+            const biomeRadius = mapRadius * 0.65; // Large enough to overlap
             
-            // Draw each biome as a circle at its actual position
+            // Draw outer biomes first (larger, overlapping circles)
             for (const biome of BIOMES) {
-                if (biome === 'FOREST') continue; // Forest drawn separately in center
+                if (biome === 'FOREST') continue;
                 
                 const center = BIOME_CENTERS[biome];
                 const colors = BIOME_COLORS[biome];
                 const bx = centerX + center.x * mapScale;
                 const by = centerY + center.y * mapScale;
-                const biomeRadius = mapRadius * 0.4;
                 
-                // Biome zone circle
+                // Large overlapping biome zone
                 ctx.fillStyle = colors.ground;
-                ctx.globalAlpha = 0.4;
+                ctx.globalAlpha = 0.35;
                 ctx.beginPath();
                 ctx.arc(bx, by, biomeRadius, 0, Math.PI * 2);
                 ctx.fill();
-                
-                // Border
-                ctx.globalAlpha = 0.8;
-                ctx.strokeStyle = colors.grid;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
-                // Label
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 9px "Segoe UI", sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.globalAlpha = 1;
-                ctx.fillText(biome, bx, by);
             }
             
-            // Draw Forest center (inner circle)
+            // Draw biome borders (arcs where circles meet)
+            ctx.globalAlpha = 0.6;
+            ctx.lineWidth = 2;
+            for (const biome of BIOMES) {
+                if (biome === 'FOREST') continue;
+                
+                const center = BIOME_CENTERS[biome];
+                const colors = BIOME_COLORS[biome];
+                const bx = centerX + center.x * mapScale;
+                const by = centerY + center.y * mapScale;
+                
+                ctx.strokeStyle = colors.grid;
+                ctx.beginPath();
+                ctx.arc(bx, by, biomeRadius * 0.7, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Draw Forest center (covers the overlap in the middle)
             ctx.fillStyle = BIOME_COLORS.FOREST.ground;
-            ctx.globalAlpha = 0.7;
+            ctx.globalAlpha = 0.6;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, mapRadius * 0.35, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, mapRadius * 0.45, 0, Math.PI * 2);
             ctx.fill();
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = 0.9;
             ctx.strokeStyle = BIOME_COLORS.FOREST.grid;
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Forest label
+            // Labels for outer biomes (positioned near edges)
+            ctx.globalAlpha = 1;
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 8px "Segoe UI", sans-serif';
+            ctx.font = 'bold 9px "Segoe UI", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            
+            const labelOffset = mapRadius * 0.75;
+            ctx.fillText('VOLCANO', centerX - labelOffset * 0.7, centerY - labelOffset * 0.7);
+            ctx.fillText('SAND', centerX + labelOffset * 0.7, centerY - labelOffset * 0.7);
+            ctx.fillText('CITY', centerX + labelOffset * 0.7, centerY + labelOffset * 0.7);
+            ctx.fillText('SNOW', centerX - labelOffset * 0.7, centerY + labelOffset * 0.7);
+            
+            // Forest label
+            ctx.font = 'bold 8px "Segoe UI", sans-serif';
             ctx.fillText('FOREST', centerX, centerY);
             
             // Scale already defined above

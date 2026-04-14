@@ -1152,8 +1152,12 @@
         }
         
         function drawCityRoads(x, y, screenX, screenY, tileSize) {
-            // Draw city road pattern with asphalt and lane markings
+            // Draw city road pattern with asphalt and crossroads
             ctx.save();
+            
+            // Determine if this tile is a crossroad based on position
+            const isCrossroadX = Math.floor(x / tileSize) % 3 === 1;
+            const isCrossroadY = Math.floor(y / tileSize) % 3 === 1;
             
             // Base asphalt color
             ctx.fillStyle = '#4a4a55';
@@ -1164,31 +1168,93 @@
             ctx.lineWidth = 2;
             ctx.globalAlpha = 0.6;
             
-            // Center line (dashed)
-            const dashSize = 20;
-            const offset = ((x + y) / 2) % (dashSize * 2);
-            for (let i = -dashSize; i < tileSize + dashSize; i += dashSize * 2) {
-                const lineX = screenX + i - offset;
+            if (isCrossroadX && isCrossroadY) {
+                // Crossroad intersection - draw crossing lines
+                // Horizontal dashed line
+                const dashSize = 15;
+                const offsetX = (x / 2) % (dashSize * 2);
+                for (let i = -dashSize; i < tileSize + dashSize; i += dashSize * 2) {
+                    const lineX = screenX + i - offsetX;
+                    ctx.beginPath();
+                    ctx.moveTo(lineX, screenY + tileSize / 2);
+                    ctx.lineTo(lineX + dashSize, screenY + tileSize / 2);
+                    ctx.stroke();
+                }
+                // Vertical dashed line
+                const offsetY = (y / 2) % (dashSize * 2);
+                for (let i = -dashSize; i < tileSize + dashSize; i += dashSize * 2) {
+                    const lineY = screenY + i - offsetY;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + tileSize / 2, lineY);
+                    ctx.lineTo(screenX + tileSize / 2, lineY + dashSize);
+                    ctx.stroke();
+                }
+                
+                // Crosswalk markings at intersection
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.3;
+                // Horizontal crosswalk
+                for (let i = 0; i < 5; i++) {
+                    ctx.fillRect(screenX + i * tileSize * 0.15, screenY + tileSize * 0.42, tileSize * 0.08, tileSize * 0.16);
+                }
+                // Vertical crosswalk
+                for (let i = 0; i < 5; i++) {
+                    ctx.fillRect(screenX + tileSize * 0.42, screenY + i * tileSize * 0.15, tileSize * 0.16, tileSize * 0.08);
+                }
+            } else if (isCrossroadX) {
+                // Vertical road
+                const dashSize = 20;
+                const offsetY = (y / 2) % (dashSize * 2);
+                for (let i = -dashSize; i < tileSize + dashSize; i += dashSize * 2) {
+                    const lineY = screenY + i - offsetY;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + tileSize / 2, lineY);
+                    ctx.lineTo(screenX + tileSize / 2, lineY + dashSize);
+                    ctx.stroke();
+                }
+                // Side lines for vertical road
+                ctx.globalAlpha = 0.8;
                 ctx.beginPath();
-                ctx.moveTo(lineX, screenY + tileSize / 2);
-                ctx.lineTo(lineX + dashSize, screenY + tileSize / 2);
+                ctx.moveTo(screenX + tileSize * 0.2, screenY);
+                ctx.lineTo(screenX + tileSize * 0.2, screenY + tileSize);
+                ctx.moveTo(screenX + tileSize * 0.8, screenY);
+                ctx.lineTo(screenX + tileSize * 0.8, screenY + tileSize);
+                ctx.stroke();
+            } else if (isCrossroadY) {
+                // Horizontal road
+                const dashSize = 20;
+                const offsetX = (x / 2) % (dashSize * 2);
+                for (let i = -dashSize; i < tileSize + dashSize; i += dashSize * 2) {
+                    const lineX = screenX + i - offsetX;
+                    ctx.beginPath();
+                    ctx.moveTo(lineX, screenY + tileSize / 2);
+                    ctx.lineTo(lineX + dashSize, screenY + tileSize / 2);
+                    ctx.stroke();
+                }
+                // Side lines for horizontal road
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY + tileSize * 0.2);
+                ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.2);
+                ctx.moveTo(screenX, screenY + tileSize * 0.8);
+                ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.8);
+                ctx.stroke();
+            } else {
+                // Regular tile - just sidewalks
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY + tileSize * 0.2);
+                ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.2);
+                ctx.moveTo(screenX, screenY + tileSize * 0.8);
+                ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.8);
                 ctx.stroke();
             }
             
-            // Side lines (solid)
-            ctx.globalAlpha = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(screenX, screenY + tileSize * 0.2);
-            ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.2);
-            ctx.moveTo(screenX, screenY + tileSize * 0.8);
-            ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.8);
-            ctx.stroke();
-            
-            // Manhole covers
-            if ((x + y) % 400 < 100) {
+            // Manhole covers (only on roads)
+            if ((isCrossroadX || isCrossroadY) && (x + y) % 400 < 100) {
                 ctx.fillStyle = '#555560';
                 ctx.globalAlpha = 0.7;
-                const mhX = screenX + tileSize * 0.3;
+                const mhX = screenX + tileSize * 0.5;
                 const mhY = screenY + tileSize * 0.5;
                 ctx.beginPath();
                 ctx.arc(mhX, mhY, 12, 0, Math.PI * 2);
@@ -1200,11 +1266,21 @@
                 ctx.stroke();
             }
             
-            // Sidewalk edges
+            // Sidewalk edges (on non-road areas)
             ctx.fillStyle = '#5a5a65';
             ctx.globalAlpha = 0.5;
-            ctx.fillRect(screenX, screenY, tileSize, tileSize * 0.15);
-            ctx.fillRect(screenX, screenY + tileSize * 0.85, tileSize, tileSize * 0.15);
+            if (!isCrossroadX && !isCrossroadY) {
+                ctx.fillRect(screenX, screenY, tileSize, tileSize * 0.15);
+                ctx.fillRect(screenX, screenY + tileSize * 0.85, tileSize, tileSize * 0.15);
+            } else if (isCrossroadX && !isCrossroadY) {
+                // Vertical road - sidewalks on sides
+                ctx.fillRect(screenX, screenY, tileSize * 0.15, tileSize);
+                ctx.fillRect(screenX + tileSize * 0.85, screenY, tileSize * 0.15, tileSize);
+            } else if (!isCrossroadX && isCrossroadY) {
+                // Horizontal road - sidewalks on top/bottom
+                ctx.fillRect(screenX, screenY, tileSize, tileSize * 0.15);
+                ctx.fillRect(screenX, screenY + tileSize * 0.85, tileSize, tileSize * 0.15);
+            }
             
             ctx.restore();
         }
@@ -1217,13 +1293,16 @@
             ctx.fillStyle = '#3d5a35';
             ctx.fillRect(screenX, screenY, tileSize, tileSize);
             
-            // Dappled sunlight spots
+            // Deterministic seed based on position
+            const seed = Math.floor(x / tileSize) * 137 + Math.floor(y / tileSize) * 241;
+            
+            // Dappled sunlight spots (deterministic)
             ctx.fillStyle = '#6a9a50';
             for (let i = 0; i < 8; i++) {
-                const sx = screenX + Math.random() * tileSize;
-                const sy = screenY + Math.random() * tileSize;
-                const size = 10 + Math.random() * 25;
-                ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+                const sx = screenX + ((seed + i * 53) % tileSize);
+                const sy = screenY + ((seed + i * 71) % tileSize);
+                const size = 10 + ((seed + i * 13) % 25);
+                ctx.globalAlpha = 0.2 + ((seed + i * 17) % 30) / 100;
                 ctx.beginPath();
                 ctx.arc(sx, sy, size, 0, Math.PI * 2);
                 ctx.fill();
@@ -1242,12 +1321,12 @@
             }
             ctx.stroke();
             
-            // Grass tufts
+            // Grass tufts (deterministic)
             ctx.fillStyle = '#4a7a3a';
             ctx.globalAlpha = 0.5;
             for (let i = 0; i < 12; i++) {
-                const gx = screenX + Math.random() * tileSize;
-                const gy = screenY + Math.random() * tileSize;
+                const gx = screenX + ((seed + i * 37) % tileSize);
+                const gy = screenY + ((seed + i * 43) % tileSize);
                 ctx.beginPath();
                 ctx.moveTo(gx, gy);
                 ctx.lineTo(gx - 3, gy - 8);
@@ -1256,14 +1335,15 @@
                 ctx.fill();
             }
             
-            // Fallen leaves
+            // Fallen leaves (deterministic)
             ctx.fillStyle = '#8a6a3a';
             ctx.globalAlpha = 0.3;
             for (let i = 0; i < 10; i++) {
-                const lx = screenX + Math.random() * tileSize;
-                const ly = screenY + Math.random() * tileSize;
+                const lx = screenX + ((seed + i * 19) % tileSize);
+                const ly = screenY + ((seed + i * 23) % tileSize);
+                const rot = ((seed + i * 11) % 100) / 100 * Math.PI;
                 ctx.beginPath();
-                ctx.ellipse(lx, ly, 3, 2, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.ellipse(lx, ly, 3, 2, rot, 0, Math.PI * 2);
                 ctx.fill();
             }
             
@@ -1278,6 +1358,9 @@
             ctx.fillStyle = '#1a1210';
             ctx.fillRect(screenX, screenY, tileSize, tileSize);
             
+            // Deterministic seed based on position
+            const crackSeed = Math.floor((x + y) / 100);
+            
             // Lava cracks - glowing orange lines
             ctx.strokeStyle = '#ff4400';
             ctx.lineWidth = 2;
@@ -1285,8 +1368,7 @@
             ctx.shadowColor = '#ff6600';
             ctx.globalAlpha = 0.6;
             
-            // Random crack pattern based on position
-            const crackSeed = Math.floor((x + y) / 100);
+            // Deterministic crack pattern based on position
             for (let i = 0; i < 5; i++) {
                 const startX = screenX + ((crackSeed * 137 + i * 53) % tileSize);
                 const startY = screenY + ((crackSeed * 241 + i * 71) % tileSize);
@@ -1297,14 +1379,14 @@
                 let cx = startX;
                 let cy = startY;
                 for (let j = 0; j < 4; j++) {
-                    cx += (Math.random() - 0.5) * 60;
-                    cy += (Math.random() - 0.5) * 60;
+                    cx += (((crackSeed + j * 17) % 100) / 100 - 0.5) * 60;
+                    cy += (((crackSeed + j * 23) % 100) / 100 - 0.5) * 60;
                     ctx.lineTo(cx, cy);
                 }
                 ctx.stroke();
             }
             
-            // Larger lava pools
+            // Larger lava pools (pulsing glow)
             ctx.fillStyle = '#ff5500';
             ctx.shadowBlur = 20;
             for (let i = 0; i < 3; i++) {
@@ -1317,14 +1399,14 @@
                 ctx.fill();
             }
             
-            // Dark rock texture
+            // Dark rock texture (deterministic)
             ctx.fillStyle = '#0f0a08';
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 0.3;
             for (let i = 0; i < 15; i++) {
-                const rx = screenX + Math.random() * tileSize;
-                const ry = screenY + Math.random() * tileSize;
-                const rsize = 2 + Math.random() * 6;
+                const rx = screenX + ((crackSeed + i * 13) % tileSize);
+                const ry = screenY + ((crackSeed + i * 17) % tileSize);
+                const rsize = 2 + ((crackSeed + i * 7) % 6);
                 ctx.beginPath();
                 ctx.arc(rx, ry, rsize, 0, Math.PI * 2);
                 ctx.fill();

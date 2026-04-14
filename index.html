@@ -168,7 +168,7 @@
             angle: 0,
             radius: 140,
             orbPullRadius: 180,
-            duration: 480,
+            duration: 240, // 4 seconds (was 8)
             timer: 0,
             debris: []
         };
@@ -780,7 +780,7 @@
                 player.ce += 0.1;
             }
             if (player.hp < player.maxHp) {
-                player.hp += 2; // HP regen
+                player.hp += 0.3; // HP regen (slower)
             }
             
             // Iframes
@@ -2910,22 +2910,26 @@
                 const percentText = Math.floor(fusionProgress * 100) + '%';
                 ctx.fillText(percentText, centerX, centerY - 50);
                 
-                // FUSION text when close
+                // IMAGINARY TECHNIQUE / KYOSHIKI text when close
                 if (fusionProgress > 0.7) {
                     ctx.shadowBlur = 20 + fastPulse * 20;
                     ctx.shadowColor = '#ff00ff';
                     ctx.fillStyle = `rgba(255, 0, 255, ${0.5 + fastPulse * 0.5})`;
-                    ctx.font = 'bold 14px "Segoe UI", sans-serif';
-                    ctx.fillText('FUSION', centerX, centerY - 70);
+                    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                    ctx.fillText('IMAGINARY TECHNIQUE', centerX, centerY - 75);
+                    ctx.font = 'bold 16px "Segoe UI", sans-serif';
+                    ctx.fillText('虚式', centerX, centerY - 55);
                 }
                 
-                // HOLLOW PURPLE text when almost ready
+                // HOLLOW PURPLE / MURASAKI text when almost ready
                 if (fusionProgress > 0.9) {
                     ctx.shadowBlur = 30;
                     ctx.shadowColor = '#ffffff';
                     ctx.fillStyle = `rgba(255, 255, 255, ${fastPulse})`;
-                    ctx.font = 'bold 16px "Segoe UI", sans-serif';
-                    ctx.fillText('HOLLOW PURPLE', centerX, centerY + 60);
+                    ctx.font = 'bold 14px "Segoe UI", sans-serif';
+                    ctx.fillText('HOLLOW PURPLE', centerX, centerY + 55);
+                    ctx.font = 'bold 18px "Segoe UI", sans-serif';
+                    ctx.fillText('紫', centerX, centerY + 75);
                 }
                 
                 ctx.restore();
@@ -2945,62 +2949,90 @@
                 
                 ctx.save();
                 
-                // Expanding warning rings
-                ctx.strokeStyle = `rgba(180, 50, 255, ${0.5 + pulse * 0.3})`;
-                ctx.lineWidth = 3;
-                ctx.shadowColor = '#aa44ff';
-                ctx.shadowBlur = 30;
-                for (let i = 0; i < 3; i++) {
-                    const ringSize = 30 + i * 15 + holdProgress * 20 + pulse * 10;
-                    ctx.globalAlpha = 0.7 - i * 0.15;
+                // Expanding warning rings with more intensity
+                ctx.strokeStyle = `rgba(255, 100, 255, ${0.6 + pulse * 0.4})`;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#ff00ff';
+                ctx.shadowBlur = 40;
+                for (let i = 0; i < 5; i++) {
+                    const ringSize = 25 + i * 12 + holdProgress * 25 + pulse * 15;
+                    ctx.globalAlpha = 0.8 - i * 0.12;
                     ctx.beginPath();
                     ctx.arc(screenX, screenY, ringSize, 0, Math.PI * 2);
                     ctx.stroke();
                 }
                 ctx.globalAlpha = 1;
                 
-                // Polished pulsing orb with rich layers
-                for (let i = 5; i >= 0; i--) {
-                    ctx.shadowBlur = 50 + i * 15;
+                // Dual rotating energy rings
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                
+                // Outer ring (clockwise)
+                ctx.rotate(time * 3);
+                ctx.strokeStyle = `rgba(255, 150, 255, ${0.6 + pulse * 0.4})`;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 25;
+                ctx.beginPath();
+                ctx.arc(0, 0, 45 + holdProgress * 15, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Inner ring (counter-clockwise)
+                ctx.rotate(-time * 6);
+                ctx.strokeStyle = `rgba(200, 100, 255, ${0.5 + fastPulse * 0.4})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 35 + holdProgress * 10, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Energy spikes
+                ctx.rotate(time * 4);
+                ctx.strokeStyle = `rgba(255, 200, 255, ${0.7 + pulse * 0.3})`;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 12; i++) {
+                    const angle = (i / 12) * Math.PI * 2;
+                    const spikeLen = 15 + holdProgress * 20 + pulse * 10;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * 30, Math.sin(angle) * 30);
+                    ctx.lineTo(Math.cos(angle) * (30 + spikeLen), Math.sin(angle) * (30 + spikeLen));
+                    ctx.stroke();
+                }
+                ctx.restore();
+                
+                // Ultra-intense pulsing orb core
+                for (let i = 7; i >= 0; i--) {
+                    ctx.shadowBlur = 60 + i * 20;
                     ctx.shadowColor = '#ff00ff';
-                    const size = (30 + holdProgress * 8) * (0.8 + pulse * 0.4) - i * 4;
-                    const alpha = 0.95 - i * 0.1;
-                    ctx.fillStyle = `rgba(${220 + i * 5}, ${80 + i * 35}, 255, ${alpha})`;
+                    const size = (35 + holdProgress * 12) * (0.8 + pulse * 0.5) - i * 3;
+                    const alpha = 0.95 - i * 0.08;
+                    ctx.fillStyle = `rgba(${230 + i * 3}, ${60 + i * 30}, 255, ${alpha})`;
                     ctx.beginPath();
                     ctx.arc(screenX, screenY, Math.max(0, size), 0, Math.PI * 2);
                     ctx.fill();
                 }
                 
-                // Rotating energy shell
-                ctx.save();
-                ctx.translate(screenX, screenY);
-                ctx.rotate(time * 2);
-                ctx.strokeStyle = `rgba(255, 200, 255, ${0.5 + pulse * 0.3})`;
-                ctx.lineWidth = 2;
-                ctx.shadowBlur = 20;
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i / 8) * Math.PI * 2;
-                    const r = 20 + holdProgress * 10;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                    ctx.stroke();
-                }
-                ctx.restore();
-                
-                // White hot core
-                ctx.shadowBlur = 40;
+                // White hot center with intense pulse
+                ctx.shadowBlur = 60;
                 ctx.shadowColor = '#ffffff';
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.8 + pulse * 0.2})`;
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.9 + pulse * 0.1})`;
                 ctx.beginPath();
-                ctx.arc(screenX, screenY, 12 + holdProgress * 4 + pulse * 3, 0, Math.PI * 2);
+                ctx.arc(screenX, screenY, 15 + holdProgress * 6 + pulse * 5, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Inner violet core
-                ctx.fillStyle = `rgba(200, 100, 255, ${0.9})`;
+                // Deep violet inner core
+                ctx.fillStyle = `rgba(150, 50, 255, ${1})`;
                 ctx.beginPath();
-                ctx.arc(screenX, screenY, 6, 0, Math.PI * 2);
+                ctx.arc(screenX, screenY, 8, 0, Math.PI * 2);
                 ctx.fill();
+                
+                // HOLLOW PURPLE / 紫 text overlay
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#ff00ff';
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.8 + fastPulse * 0.2})`;
+                ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('HOLLOW PURPLE', screenX, screenY - 50);
+                ctx.font = 'bold 20px "Segoe UI", sans-serif';
+                ctx.fillText('紫', screenX, screenY + 65);
                 
                 ctx.restore();
                 return;

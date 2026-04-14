@@ -280,10 +280,10 @@
                 groundAlt: '#1a0f0a'
             },
             'CITY': { 
-                bg: '#0a0a15', 
-                grid: 'rgba(100, 100, 150, 0.15)',
-                ground: '#1a1a2e',
-                groundAlt: '#151525'
+                bg: '#2a2a35', 
+                grid: 'rgba(80, 80, 90, 0.2)',
+                ground: '#3a3a45',
+                groundAlt: '#454550'
             },
             'SAND': { 
                 bg: '#e8d4a0', 
@@ -528,9 +528,24 @@
                             color = type === 'rock' ? '#444444' : '#ff4500';
                             break;
                         case 'CITY':
-                            type = 'building';
-                            size = 60 + Math.random() * 100;
-                            color = `hsl(${200 + Math.random() * 40}, 30%, ${30 + Math.random() * 20}%)`;
+                            const cityTypeRand = Math.random();
+                            if (cityTypeRand > 0.6) {
+                                type = 'building';
+                                size = 60 + Math.random() * 80;
+                                color = `hsl(${200 + Math.random() * 40}, 30%, ${35 + Math.random() * 15}%)`;
+                            } else if (cityTypeRand > 0.3) {
+                                type = 'street_lamp';
+                                size = 30 + Math.random() * 15;
+                                color = '#3a3a45';
+                            } else if (cityTypeRand > 0.15) {
+                                type = 'shop';
+                                size = 40 + Math.random() * 25;
+                                color = `hsl(${0 + Math.random() * 40}, 45%, ${50 + Math.random() * 15}%)`;
+                            } else {
+                                type = 'car';
+                                size = 20 + Math.random() * 10;
+                                color = ['#cc4444', '#4444cc', '#44cc44', '#cccc44', '#444444'][Math.floor(Math.random() * 5)];
+                            }
                             break;
                         case 'SAND':
                             const sandTypeRand = Math.random();
@@ -590,9 +605,24 @@
                             color = type === 'volcano' ? '#4a2520' : '#444444';
                             break;
                         case 'CITY':
-                            type = 'house';
-                            size = 100 + Math.random() * 60;
-                            color = `hsl(${200 + Math.random() * 30}, 40%, ${40 + Math.random() * 15}%)`;
+                            const cityRand = Math.random();
+                            if (cityRand > 0.7) {
+                                type = 'skyscraper';
+                                size = 200 + Math.random() * 150;
+                                color = `hsl(${210 + Math.random() * 20}, 30%, ${50 + Math.random() * 20}%)`;
+                            } else if (cityRand > 0.4) {
+                                type = 'building';
+                                size = 120 + Math.random() * 80;
+                                color = `hsl(${0 + Math.random() * 30}, 40%, ${45 + Math.random() * 15}%)`;
+                            } else if (cityRand > 0.2) {
+                                type = 'street_lamp';
+                                size = 40 + Math.random() * 10;
+                                color = '#444450';
+                            } else {
+                                type = 'shop';
+                                size = 60 + Math.random() * 30;
+                                color = `hsl(${30 + Math.random() * 30}, 50%, ${55 + Math.random() * 15}%)`;
+                            }
                             break;
                         case 'SAND':
                             const sandRand = Math.random();
@@ -998,6 +1028,9 @@
                     } else if (biome === 'SNOW') {
                         // Snow biome - draw snow texture
                         drawSnowTexture(x, y, screenX, screenY, tileSize);
+                    } else if (biome === 'CITY') {
+                        // City biome - draw roads
+                        drawCityRoads(x, y, screenX, screenY, tileSize);
                     } else {
                         // Add texture pattern for other biomes
                         if ((x + y) % (tileSize * 2) < tileSize) {
@@ -1090,6 +1123,64 @@
                 }
                 ctx.stroke();
             }
+            
+            ctx.restore();
+        }
+        
+        function drawCityRoads(x, y, screenX, screenY, tileSize) {
+            // Draw city road pattern with asphalt and lane markings
+            ctx.save();
+            
+            // Base asphalt color
+            ctx.fillStyle = '#4a4a55';
+            ctx.fillRect(screenX, screenY, tileSize, tileSize);
+            
+            // Road markings (white/yellow lines)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.6;
+            
+            // Center line (dashed)
+            const dashSize = 20;
+            const offset = ((x + y) / 2) % (dashSize * 2);
+            for (let i = -dashSize; i < tileSize + dashSize; i += dashSize * 2) {
+                const lineX = screenX + i - offset;
+                ctx.beginPath();
+                ctx.moveTo(lineX, screenY + tileSize / 2);
+                ctx.lineTo(lineX + dashSize, screenY + tileSize / 2);
+                ctx.stroke();
+            }
+            
+            // Side lines (solid)
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY + tileSize * 0.2);
+            ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.2);
+            ctx.moveTo(screenX, screenY + tileSize * 0.8);
+            ctx.lineTo(screenX + tileSize, screenY + tileSize * 0.8);
+            ctx.stroke();
+            
+            // Manhole covers
+            if ((x + y) % 400 < 100) {
+                ctx.fillStyle = '#555560';
+                ctx.globalAlpha = 0.7;
+                const mhX = screenX + tileSize * 0.3;
+                const mhY = screenY + tileSize * 0.5;
+                ctx.beginPath();
+                ctx.arc(mhX, mhY, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(mhX, mhY, 10, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Sidewalk edges
+            ctx.fillStyle = '#5a5a65';
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(screenX, screenY, tileSize, tileSize * 0.15);
+            ctx.fillRect(screenX, screenY + tileSize * 0.85, tileSize, tileSize * 0.15);
             
             ctx.restore();
         }
@@ -2150,6 +2241,110 @@
                                 );
                             }
                         }
+                        break;
+                        
+                    case 'skyscraper':
+                        // Tall skyscraper with many windows
+                        ctx.fillStyle = obj.color;
+                        ctx.fillRect(screenX - obj.size * 0.25, screenY - obj.size, obj.size * 0.5, obj.size);
+                        // Skyscraper windows (grid pattern)
+                        ctx.fillStyle = '#aaddff';
+                        const floors = Math.floor(obj.size / 15);
+                        const windowsPerFloor = 3;
+                        for (let fy = 0; fy < floors; fy++) {
+                            for (let wx = 0; wx < windowsPerFloor; wx++) {
+                                if (Math.random() > 0.3) { // Some lights on, some off
+                                    ctx.fillRect(
+                                        screenX - obj.size * 0.2 + wx * obj.size * 0.13,
+                                        screenY - obj.size + fy * 15 + 5,
+                                        obj.size * 0.08,
+                                        obj.size * 0.06
+                                    );
+                                }
+                            }
+                        }
+                        // Antenna on top
+                        ctx.strokeStyle = '#666';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY - obj.size);
+                        ctx.lineTo(screenX, screenY - obj.size - 20);
+                        ctx.stroke();
+                        break;
+                        
+                    case 'shop':
+                        // Storefront with awning
+                        ctx.fillStyle = obj.color;
+                        ctx.fillRect(screenX - obj.size * 0.4, screenY - obj.size * 0.6, obj.size * 0.8, obj.size * 0.6);
+                        // Awning
+                        ctx.fillStyle = '#cc4444';
+                        ctx.beginPath();
+                        ctx.moveTo(screenX - obj.size * 0.45, screenY - obj.size * 0.6);
+                        ctx.lineTo(screenX + obj.size * 0.45, screenY - obj.size * 0.6);
+                        ctx.lineTo(screenX + obj.size * 0.4, screenY - obj.size * 0.75);
+                        ctx.lineTo(screenX - obj.size * 0.4, screenY - obj.size * 0.75);
+                        ctx.closePath();
+                        ctx.fill();
+                        // Shop window
+                        ctx.fillStyle = '#88ccff';
+                        ctx.fillRect(screenX - obj.size * 0.25, screenY - obj.size * 0.45, obj.size * 0.5, obj.size * 0.35);
+                        // Door
+                        ctx.fillStyle = '#5a4a3a';
+                        ctx.fillRect(screenX - obj.size * 0.08, screenY - obj.size * 0.25, obj.size * 0.16, obj.size * 0.25);
+                        break;
+                        
+                    case 'street_lamp':
+                        // Lamp post
+                        ctx.fillStyle = '#2a2a35';
+                        ctx.fillRect(screenX - 2, screenY - obj.size, 4, obj.size);
+                        // Lamp head
+                        ctx.fillStyle = '#3a3a45';
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY - obj.size, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Light glow
+                        ctx.fillStyle = '#ffdd88';
+                        ctx.shadowBlur = 20;
+                        ctx.shadowColor = '#ffaa44';
+                        ctx.globalAlpha = 0.8;
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY - obj.size, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        ctx.globalAlpha = 1;
+                        // Light cone on ground
+                        ctx.fillStyle = 'rgba(255, 220, 150, 0.15)';
+                        ctx.beginPath();
+                        ctx.moveTo(screenX - obj.size * 0.3, screenY + obj.size * 0.2);
+                        ctx.lineTo(screenX + obj.size * 0.3, screenY + obj.size * 0.2);
+                        ctx.lineTo(screenX, screenY - obj.size);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                        
+                    case 'car':
+                        // Car body
+                        ctx.fillStyle = obj.color;
+                        ctx.fillRect(screenX - obj.size, screenY - obj.size * 0.4, obj.size * 2, obj.size * 0.5);
+                        // Car roof
+                        ctx.fillRect(screenX - obj.size * 0.6, screenY - obj.size * 0.7, obj.size * 1.2, obj.size * 0.4);
+                        // Windows
+                        ctx.fillStyle = '#88ccff';
+                        ctx.fillRect(screenX - obj.size * 0.5, screenY - obj.size * 0.65, obj.size * 0.4, obj.size * 0.25);
+                        ctx.fillRect(screenX + obj.size * 0.1, screenY - obj.size * 0.65, obj.size * 0.4, obj.size * 0.25);
+                        // Wheels
+                        ctx.fillStyle = '#222';
+                        ctx.beginPath();
+                        ctx.arc(screenX - obj.size * 0.6, screenY + obj.size * 0.1, obj.size * 0.2, 0, Math.PI * 2);
+                        ctx.arc(screenX + obj.size * 0.6, screenY + obj.size * 0.1, obj.size * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Headlights
+                        ctx.fillStyle = '#ffffcc';
+                        ctx.globalAlpha = 0.6;
+                        ctx.beginPath();
+                        ctx.arc(screenX + obj.size * 0.9, screenY - obj.size * 0.2, obj.size * 0.1, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
                         break;
                         
                     case 'cactus':

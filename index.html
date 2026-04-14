@@ -2494,6 +2494,8 @@
                     hollowPurple.vy = 0;
                     hollowPurple.life = hollowPurple.maxLife;
                     hollowPurple.hitEnemies = [];
+                    hollowPurple.blueOrb = { x: 0, y: 0, angle: 0 };
+                    hollowPurple.redOrb = { x: 0, y: 0, angle: Math.PI };
                 }
                 return;
             }
@@ -2528,15 +2530,15 @@
                 const dy = hollowPurple.y - spirit.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                // Check if already hit this enemy
-                const alreadyHit = hollowPurple.hitEnemies.includes(spirit);
+                // Check if already hit this enemy (use spirit index for reliability)
+                const alreadyHit = hollowPurple.hitEnemies.includes(i);
                 
                 if (dist < hollowPurple.radius + spirit.size && !alreadyHit) {
                     spirit.hp -= hollowPurple.damage;
                     addDamageCounter(hollowPurple.damage);
                     addDamageNumber(spirit.x, spirit.y, hollowPurple.damage);
                     addHitEffect(spirit.x, spirit.y, 'purple');
-                    hollowPurple.hitEnemies.push(spirit);
+                    hollowPurple.hitEnemies.push(i);
                     
                     if (spirit.hp <= 0) {
                         addKillEffect(spirit.x, spirit.y, 'purple');

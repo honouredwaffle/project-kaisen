@@ -2959,22 +2959,47 @@
                 }
                 ctx.globalAlpha = 1;
                 
-                // Intense pulsing orb
-                for (let i = 4; i >= 0; i--) {
-                    ctx.shadowBlur = 40 + i * 10;
-                    ctx.shadowColor = '#cc66ff';
-                    const size = (25 + holdProgress * 5) * (0.8 + pulse * 0.4) - i * 3;
-                    const alpha = 0.9 - i * 0.12;
-                    ctx.fillStyle = `rgba(${200 + i * 10}, ${100 + i * 30}, 255, ${alpha})`;
+                // Polished pulsing orb with rich layers
+                for (let i = 5; i >= 0; i--) {
+                    ctx.shadowBlur = 50 + i * 15;
+                    ctx.shadowColor = '#ff00ff';
+                    const size = (30 + holdProgress * 8) * (0.8 + pulse * 0.4) - i * 4;
+                    const alpha = 0.95 - i * 0.1;
+                    ctx.fillStyle = `rgba(${220 + i * 5}, ${80 + i * 35}, 255, ${alpha})`;
                     ctx.beginPath();
                     ctx.arc(screenX, screenY, Math.max(0, size), 0, Math.PI * 2);
                     ctx.fill();
                 }
                 
-                // White core
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.7 + pulse * 0.3})`;
+                // Rotating energy shell
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                ctx.rotate(time * 2);
+                ctx.strokeStyle = `rgba(255, 200, 255, ${0.5 + pulse * 0.3})`;
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 20;
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const r = 20 + holdProgress * 10;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                
+                // White hot core
+                ctx.shadowBlur = 40;
+                ctx.shadowColor = '#ffffff';
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.8 + pulse * 0.2})`;
                 ctx.beginPath();
-                ctx.arc(screenX, screenY, 10 + holdProgress * 3, 0, Math.PI * 2);
+                ctx.arc(screenX, screenY, 12 + holdProgress * 4 + pulse * 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner violet core
+                ctx.fillStyle = `rgba(200, 100, 255, ${0.9})`;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 6, 0, Math.PI * 2);
                 ctx.fill();
                 
                 ctx.restore();
@@ -2983,47 +3008,97 @@
             
             ctx.save();
             
-            // Purple orb with swirling energy
-            ctx.shadowBlur = 30;
-            ctx.shadowColor = '#aa44ff';
+            // Polished Purple orb with multi-layered effects
+            const pulse = Math.sin(time * 2) * 0.3 + 0.7;
+            const fastPulse = Math.sin(time * 4) * 0.5 + 0.5;
             
-            // Outer swirling ring
-            ctx.strokeStyle = '#aa44ff';
-            ctx.lineWidth = 4;
+            // Outer glow halo
+            ctx.shadowBlur = 50 + pulse * 30;
+            ctx.shadowColor = '#ff00ff';
+            ctx.fillStyle = `rgba(255, 0, 255, ${0.1 + pulse * 0.1})`;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, hollowPurple.radius * 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Rotating energy rings (3 layers, different speeds)
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#cc66ff';
             for (let i = 0; i < 3; i++) {
+                const rotation = time * (1 + i * 0.5) + i * (Math.PI * 2 / 3);
+                const ringRadius = hollowPurple.radius + 15 + i * 10;
+                ctx.strokeStyle = `rgba(200, 100, 255, ${0.4 + fastPulse * 0.3})`;
+                ctx.lineWidth = 2 + i;
                 ctx.beginPath();
-                const offset = (time + i * 2) % (Math.PI * 2);
-                ctx.arc(screenX, screenY, hollowPurple.radius + i * 8, offset, offset + Math.PI * 1.5);
+                ctx.arc(screenX, screenY, ringRadius, rotation, rotation + Math.PI * 1.8);
                 ctx.stroke();
             }
             
-            // Main purple orb
-            const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, hollowPurple.radius);
+            // Main orb body with rich gradient
+            const gradient = ctx.createRadialGradient(
+                screenX - 5, screenY - 5, 0,
+                screenX, screenY, hollowPurple.radius
+            );
             gradient.addColorStop(0, '#ffffff');
-            gradient.addColorStop(0.3, '#cc88ff');
-            gradient.addColorStop(0.7, '#8844cc');
-            gradient.addColorStop(1, '#442266');
+            gradient.addColorStop(0.15, '#ffccff');
+            gradient.addColorStop(0.35, '#dd88ff');
+            gradient.addColorStop(0.6, '#aa44dd');
+            gradient.addColorStop(0.85, '#6622aa');
+            gradient.addColorStop(1, '#331155');
             
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = '#aa44ff';
             ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.arc(screenX, screenY, hollowPurple.radius, 0, Math.PI * 2);
             ctx.fill();
             
-            // Inner core
-            ctx.fillStyle = '#ffffff';
+            // Inner energy core (pulsing)
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#ffffff';
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 + fastPulse * 0.2})`;
             ctx.beginPath();
-            ctx.arc(screenX, screenY, 8, 0, Math.PI * 2);
+            ctx.arc(screenX, screenY, 10 + fastPulse * 4, 0, Math.PI * 2);
             ctx.fill();
             
-            // Energy trail
-            ctx.globalAlpha = 0.5;
-            for (let i = 1; i <= 5; i++) {
-                const trailX = screenX - hollowPurple.vx * i * 2;
-                const trailY = screenY - hollowPurple.vy * i * 2;
-                ctx.fillStyle = `rgba(180, 50, 255, ${0.5 - i * 0.1})`;
+            // Hot center
+            ctx.fillStyle = `rgba(200, 150, 255, ${0.9})`;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Energy particles orbiting
+            ctx.shadowBlur = 15;
+            for (let i = 0; i < 6; i++) {
+                const angle = time * 3 + i * (Math.PI / 3);
+                const dist = hollowPurple.radius + 20 + Math.sin(time * 2 + i) * 5;
+                const px = screenX + Math.cos(angle) * dist;
+                const py = screenY + Math.sin(angle) * dist;
+                ctx.fillStyle = i % 2 === 0 ? '#ff88ff' : '#aa66ff';
                 ctx.beginPath();
-                ctx.arc(trailX, trailY, hollowPurple.radius * (1 - i * 0.15), 0, Math.PI * 2);
+                ctx.arc(px, py, 2 + fastPulse * 2, 0, Math.PI * 2);
                 ctx.fill();
+            }
+            
+            // Enhanced energy trail
+            ctx.shadowBlur = 0;
+            for (let i = 1; i <= 8; i++) {
+                const trailX = screenX - hollowPurple.vx * i * 1.5;
+                const trailY = screenY - hollowPurple.vy * i * 1.5;
+                const alpha = (0.6 - i * 0.07) * (0.5 + fastPulse * 0.3);
+                const size = hollowPurple.radius * (1 - i * 0.1);
+                
+                ctx.fillStyle = `rgba(180, 80, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(trailX, trailY, Math.max(0, size), 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Trail sparkles
+                if (i % 2 === 0) {
+                    ctx.fillStyle = `rgba(255, 200, 255, ${alpha * 1.5})`;
+                    ctx.beginPath();
+                    ctx.arc(trailX + (Math.random() - 0.5) * 10, trailY + (Math.random() - 0.5) * 10, 1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
             
             ctx.restore();

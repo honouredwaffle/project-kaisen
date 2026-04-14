@@ -330,6 +330,7 @@
                 const color = isSpecial ? biomeColors.special : biomeColors.normal;
                 
                 cursedSpirits.push({
+                    id: i,
                     x, y,
                     grade,
                     hp: data.hp,
@@ -2530,15 +2531,15 @@
                 const dy = hollowPurple.y - spirit.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 
-                // Check if already hit this enemy (use spirit index for reliability)
-                const alreadyHit = hollowPurple.hitEnemies.includes(i);
+                // Check if already hit this enemy (use spirit id for reliability)
+                const alreadyHit = hollowPurple.hitEnemies.includes(spirit.id || i);
                 
                 if (dist < hollowPurple.radius + spirit.size && !alreadyHit) {
                     spirit.hp -= hollowPurple.damage;
                     addDamageCounter(hollowPurple.damage);
                     addDamageNumber(spirit.x, spirit.y, hollowPurple.damage);
                     addHitEffect(spirit.x, spirit.y, 'purple');
-                    hollowPurple.hitEnemies.push(i);
+                    hollowPurple.hitEnemies.push(spirit.id || i);
                     
                     if (spirit.hp <= 0) {
                         addKillEffect(spirit.x, spirit.y, 'purple');
@@ -3776,22 +3777,42 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('FOREST', centerX, centerY);
             
-            // Disaster curse spawn locations
+            // Scale for world to minimap conversion
+            const mapScale = mapRadius / (BIOME_SIZE * 1.2);
+            
+            // Disaster curse spawn locations (skull icons)
             for (const curse of Object.values(DISASTER_CURSES)) {
                 for (const loc of curse.spawnLocations) {
-                    const locX = mapX + (loc.x + WORLD_WIDTH/2) * scaleX;
-                    const locY = mapY + (loc.y + WORLD_HEIGHT/2) * scaleY;
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                    const locX = centerX + loc.x * mapScale;
+                    const locY = centerY + loc.y * mapScale;
+                    
+                    // Skull icon background
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
                     ctx.beginPath();
-                    ctx.arc(locX, locY, 3, 0, Math.PI * 2);
+                    ctx.arc(locX, locY, 5, 0, Math.PI * 2);
                     ctx.fill();
+                    
+                    // Skull icon
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 8px "Segoe UI", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('☠', locX, locY);
                 }
             }
             
-            // Active disaster curse
+            // Active disaster curse (pulsing red dot)
             if (activeDisasterCurse) {
-                const bossX = mapX + (activeDisasterCurse.x + WORLD_WIDTH/2) * scaleX;
-                const bossY = mapY + (activeDisasterCurse.y + WORLD_HEIGHT/2) * scaleY;
+                const bossX = centerX + activeDisasterCurse.x * mapScale;
+                const bossY = centerY + activeDisasterCurse.y * mapScale;
+                
+                // Pulsing glow
+                const pulse = Math.sin(Date.now() * 0.01) * 0.5 + 0.5;
+                ctx.fillStyle = `rgba(255, 0, 0, ${0.5 + pulse * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(bossX, bossY, 8 + pulse * 4, 0, Math.PI * 2);
+                ctx.fill();
+                
                 ctx.fillStyle = '#ff0000';
                 ctx.shadowColor = '#ff0000';
                 ctx.shadowBlur = 10;

@@ -286,10 +286,10 @@
                 groundAlt: '#151525'
             },
             'SAND': { 
-                bg: '#f4e4c1', 
-                grid: 'rgba(200, 170, 120, 0.2)',
-                ground: '#e6d5ac',
-                groundAlt: '#d4c49a'
+                bg: '#e8d4a0', 
+                grid: 'rgba(180, 140, 80, 0.15)',
+                ground: '#d4b876',
+                groundAlt: '#c4a86a'
             }
         };
         
@@ -522,9 +522,20 @@
                             color = `hsl(${200 + Math.random() * 40}, 30%, ${30 + Math.random() * 20}%)`;
                             break;
                         case 'SAND':
-                            type = Math.random() > 0.5 ? 'cactus' : 'rock';
-                            size = type === 'cactus' ? 30 + Math.random() * 25 : 20 + Math.random() * 30;
-                            color = type === 'cactus' ? '#2d5a2d' : '#c4a35a';
+                            const sandTypeRand = Math.random();
+                            if (sandTypeRand > 0.7) {
+                                type = 'palm_tree';
+                                size = 80 + Math.random() * 40;
+                                color = '#3d8b3d';
+                            } else if (sandTypeRand > 0.35) {
+                                type = 'cactus';
+                                size = 30 + Math.random() * 25;
+                                color = '#4a7c4a';
+                            } else {
+                                type = 'rock';
+                                size = 20 + Math.random() * 30;
+                                color = '#c4a35a';
+                            }
                             break;
                     }
                     
@@ -573,9 +584,24 @@
                             color = `hsl(${200 + Math.random() * 30}, 40%, ${40 + Math.random() * 15}%)`;
                             break;
                         case 'SAND':
-                            type = Math.random() > 0.8 ? 'pyramid' : (Math.random() > 0.5 ? 'oasis' : 'cactus');
-                            size = type === 'pyramid' ? 250 + Math.random() * 100 : (type === 'oasis' ? 120 : 40);
-                            color = type === 'pyramid' ? '#d4c49a' : (type === 'oasis' ? '#228b22' : '#2d5a2d');
+                            const sandRand = Math.random();
+                            if (sandRand > 0.85) {
+                                type = 'palm_tree';
+                                size = 100 + Math.random() * 50;
+                                color = '#2d5a2d';
+                            } else if (sandRand > 0.6) {
+                                type = 'pyramid';
+                                size = 250 + Math.random() * 100;
+                                color = '#d4b876';
+                            } else if (sandRand > 0.3) {
+                                type = 'oasis';
+                                size = 120 + Math.random() * 40;
+                                color = '#228b22';
+                            } else {
+                                type = 'cactus';
+                                size = 30 + Math.random() * 25;
+                                color = '#4a7c4a';
+                            }
                             break;
                     }
                     
@@ -946,7 +972,8 @@
             
             for (let x = startX; x < endX; x += tileSize) {
                 for (let y = startY; y < endY; y += tileSize) {
-                    const colors = getBiomeColors(x + tileSize/2, y + tileSize/2);
+                    const biome = getBiomeAt(x + tileSize/2, y + tileSize/2);
+                    const colors = BIOME_COLORS[biome];
                     const screenX = x - camera.x;
                     const screenY = y - camera.y;
                     
@@ -954,15 +981,68 @@
                     ctx.fillStyle = colors.ground;
                     ctx.fillRect(screenX, screenY, tileSize, tileSize);
                     
-                    // Add texture pattern
-                    if ((x + y) % (tileSize * 2) < tileSize) {
-                        ctx.fillStyle = colors.groundAlt;
-                        ctx.globalAlpha = 0.3;
-                        ctx.fillRect(screenX, screenY, tileSize, tileSize);
-                        ctx.globalAlpha = 1;
+                    // Sand biome - draw dune patterns
+                    if (biome === 'SAND') {
+                        drawSandDunes(x, y, screenX, screenY, tileSize, colors);
+                    } else {
+                        // Add texture pattern for other biomes
+                        if ((x + y) % (tileSize * 2) < tileSize) {
+                            ctx.fillStyle = colors.groundAlt;
+                            ctx.globalAlpha = 0.3;
+                            ctx.fillRect(screenX, screenY, tileSize, tileSize);
+                            ctx.globalAlpha = 1;
+                        }
                     }
                 }
             }
+        }
+        
+        function drawSandDunes(x, y, screenX, screenY, tileSize, colors) {
+            // Draw rolling sand dune patterns
+            ctx.save();
+            
+            // Create wave-like dune patterns using sine waves
+            const waveFreq = 0.01;
+            const waveAmp = 30;
+            
+            for (let row = 0; row < 4; row++) {
+                const yOffset = row * (tileSize / 4);
+                const wavePhase = (x * waveFreq) + (row * 0.5);
+                
+                // Shadow side of dune (darker)
+                ctx.fillStyle = '#b89a60'; // Darker sand color
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY + yOffset);
+                
+                for (let px = 0; px <= tileSize; px += 10) {
+                    const waveY = Math.sin((px * waveFreq) + wavePhase) * waveAmp;
+                    ctx.lineTo(screenX + px, screenY + yOffset + waveY + 15);
+                }
+                
+                ctx.lineTo(screenX + tileSize, screenY + yOffset + tileSize/4);
+                ctx.lineTo(screenX, screenY + yOffset + tileSize/4);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Light side of dune (lighter)
+                ctx.fillStyle = '#e8c888'; // Lighter sand color
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY + yOffset);
+                
+                for (let px = 0; px <= tileSize; px += 10) {
+                    const waveY = Math.sin((px * waveFreq) + wavePhase) * waveAmp;
+                    ctx.lineTo(screenX + px, screenY + yOffset + waveY);
+                }
+                
+                ctx.lineTo(screenX + tileSize, screenY + yOffset);
+                ctx.lineTo(screenX, screenY + yOffset);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.restore();
         }
         
         function drawBiomeOverlay() {
@@ -2061,6 +2141,87 @@
                             }
                             ctx.fillStyle = '#8b4513';
                         }
+                        break;
+                        
+                    case 'palm_tree':
+                        // Palm tree with curved trunk and fan leaves
+                        ctx.save();
+                        
+                        // Trunk - curved
+                        ctx.fillStyle = '#8b5a2b';
+                        ctx.beginPath();
+                        ctx.moveTo(screenX - obj.size * 0.08, screenY + obj.size * 0.3);
+                        ctx.quadraticCurveTo(
+                            screenX + obj.size * 0.05, screenY,
+                            screenX, screenY - obj.size * 0.6
+                        );
+                        ctx.lineTo(screenX + obj.size * 0.05, screenY - obj.size * 0.6);
+                        ctx.quadraticCurveTo(
+                            screenX + obj.size * 0.12, screenY,
+                            screenX + obj.size * 0.08, screenY + obj.size * 0.3
+                        );
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Trunk texture lines
+                        ctx.strokeStyle = '#6b4423';
+                        ctx.lineWidth = 1;
+                        for (let i = 0; i < 5; i++) {
+                            const ty = screenY + obj.size * 0.25 - i * obj.size * 0.15;
+                            ctx.beginPath();
+                            ctx.moveTo(screenX - obj.size * 0.05, ty);
+                            ctx.lineTo(screenX + obj.size * 0.05, ty);
+                            ctx.stroke();
+                        }
+                        
+                        // Palm fronds (leaves) - fanning out from top
+                        const frondCount = 7;
+                        ctx.strokeStyle = '#3d8b3d';
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
+                        
+                        for (let i = 0; i < frondCount; i++) {
+                            const angle = -Math.PI / 2 + (i - frondCount/2) * 0.35;
+                            const frondLen = obj.size * 0.7;
+                            
+                            // Main frond stem
+                            ctx.beginPath();
+                            ctx.moveTo(screenX, screenY - obj.size * 0.6);
+                            
+                            // Curved frond
+                            const cpX = screenX + Math.cos(angle) * frondLen * 0.5;
+                            const cpY = screenY - obj.size * 0.6 + Math.sin(angle) * frondLen * 0.5 - obj.size * 0.1;
+                            const endX = screenX + Math.cos(angle) * frondLen;
+                            const endY = screenY - obj.size * 0.6 + Math.sin(angle) * frondLen * 0.7;
+                            
+                            ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+                            ctx.stroke();
+                            
+                            // Frond leaflets
+                            ctx.strokeStyle = '#4a9a4a';
+                            ctx.lineWidth = 1.5;
+                            for (let j = 1; j < 8; j++) {
+                                const t = j / 8;
+                                const lx = screenX + Math.cos(angle) * frondLen * t;
+                                const ly = screenY - obj.size * 0.6 + Math.sin(angle) * frondLen * t * 0.7 - Math.sin(t * Math.PI) * obj.size * 0.1;
+                                const leafletAngle = angle + (j % 2 === 0 ? 0.3 : -0.3);
+                                
+                                ctx.beginPath();
+                                ctx.moveTo(lx, ly);
+                                ctx.lineTo(lx + Math.cos(leafletAngle) * obj.size * 0.15, ly + Math.sin(leafletAngle) * obj.size * 0.15);
+                                ctx.stroke();
+                            }
+                            ctx.strokeStyle = '#3d8b3d';
+                            ctx.lineWidth = 3;
+                        }
+                        
+                        // Shadow at base
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY + obj.size * 0.3, obj.size * 0.2, obj.size * 0.08, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.restore();
                         break;
                         
                     // Boss structure types - menacing and unique

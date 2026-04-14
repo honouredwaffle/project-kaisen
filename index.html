@@ -3526,35 +3526,76 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
             
-            // Biome zones - diagonal layout
+            // Biome zones - clean diagonal layout with sectors
             const centerX = mapX + mapWidth / 2;
             const centerY = mapY + mapHeight / 2;
-            const biomeRadius = Math.min(mapWidth, mapHeight) * 0.35;
+            const mapRadius = Math.min(mapWidth, mapHeight) / 2 - 5;
             
-            for (const biome of BIOMES) {
-                const center = BIOME_CENTERS[biome];
-                const colors = BIOME_COLORS[biome];
-                const bx = centerX + center.x * scaleX;
-                const by = centerY + center.y * scaleY;
-                
-                // Draw biome as a circle on the minimap
-                ctx.fillStyle = colors.ground;
+            // Draw background grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 3; i++) {
                 ctx.beginPath();
-                ctx.arc(bx, by, biomeRadius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Biome label
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                ctx.font = '10px "Segoe UI", sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(biome, bx, by);
+                ctx.arc(centerX, centerY, mapRadius * (i / 4), 0, Math.PI * 2);
+                ctx.stroke();
             }
             
-            // Draw forest center specially
+            // Draw biome sectors (pie slices)
+            const sectorAngle = Math.PI / 2; // 90 degrees each
+            const biomeOrder = ['VOLCANO', 'SAND', 'CITY', 'SNOW'];
+            const startAngle = -Math.PI / 4; // Start at top-left diagonal
+            
+            for (let i = 0; i < 4; i++) {
+                const biome = biomeOrder[i];
+                const colors = BIOME_COLORS[biome];
+                const angle1 = startAngle + i * sectorAngle;
+                const angle2 = startAngle + (i + 1) * sectorAngle;
+                
+                // Draw sector
+                ctx.fillStyle = colors.ground;
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, mapRadius * 0.85, angle1, angle2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                
+                // Sector border
+                ctx.strokeStyle = colors.grid;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Label position (middle of sector)
+                const labelAngle = angle1 + sectorAngle / 2;
+                const labelRadius = mapRadius * 0.6;
+                const lx = centerX + Math.cos(labelAngle) * labelRadius;
+                const ly = centerY + Math.sin(labelAngle) * labelRadius;
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(biome, lx, ly);
+            }
+            
+            // Forest center (inner circle)
             ctx.fillStyle = BIOME_COLORS['FOREST'].ground;
+            ctx.globalAlpha = 0.8;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, biomeRadius * 0.6, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, mapRadius * 0.25, 0, Math.PI * 2);
             ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = BIOME_COLORS['FOREST'].grid;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Forest label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 8px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('FOREST', centerX, centerY);
             
             // Disaster curse spawn locations
             for (const curse of Object.values(DISASTER_CURSES)) {

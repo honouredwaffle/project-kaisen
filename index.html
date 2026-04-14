@@ -220,12 +220,16 @@
             radius: 0,
             maxRadius: 800,
             duration: 1800, // 30 seconds at 60fps
+            centerX: 0, // Domain center world position
+            centerY: 0,
             lines: [], // Speed lines
             stars: [], // Background stars
             galaxies: [], // Swirling galaxies
             blackHole: { angle: 0, accretionRadius: 140 },
             paintSplats: [], // White paint splatters
-            frozenEnemies: [] // Track which enemies are frozen
+            frozenEnemies: [], // Track which enemies are frozen
+            footstepRipples: [],
+            footstepDistance: 0
         };
         
         // Camera

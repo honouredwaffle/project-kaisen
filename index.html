@@ -262,10 +262,10 @@
         // Biome colors - more distinct and realistic
         const BIOME_COLORS = {
             'SNOW': { 
-                bg: '#f0f8ff', 
-                grid: 'rgba(200, 220, 255, 0.2)',
-                ground: '#ffffff',
-                groundAlt: '#e8f4f8'
+                bg: '#e8f4ff', 
+                grid: 'rgba(180, 210, 240, 0.15)',
+                ground: '#f5faff',
+                groundAlt: '#e0f0f8'
             },
             'FOREST': { 
                 bg: '#0a1f0a', 
@@ -502,9 +502,20 @@
                     
                     switch(biome) {
                         case 'SNOW':
-                            type = Math.random() > 0.5 ? 'pine' : 'rock';
-                            size = type === 'pine' ? 40 + Math.random() * 30 : 25 + Math.random() * 20;
-                            color = type === 'pine' ? '#1a3d1a' : '#888888';
+                            const snowTypeRand = Math.random();
+                            if (snowTypeRand > 0.6) {
+                                type = 'snow_pine';
+                                size = 50 + Math.random() * 35;
+                                color = '#2d5a3d';
+                            } else if (snowTypeRand > 0.3) {
+                                type = 'pine';
+                                size = 40 + Math.random() * 30;
+                                color = '#1a4a2d';
+                            } else {
+                                type = 'rock';
+                                size = 25 + Math.random() * 20;
+                                color = '#a0a8b0';
+                            }
                             break;
                         case 'FOREST':
                             type = Math.random() > 0.3 ? 'tree' : 'bush';
@@ -984,6 +995,9 @@
                     // Sand biome - draw dune patterns
                     if (biome === 'SAND') {
                         drawSandDunes(x, y, screenX, screenY, tileSize, colors);
+                    } else if (biome === 'SNOW') {
+                        // Snow biome - draw snow texture
+                        drawSnowTexture(x, y, screenX, screenY, tileSize);
                     } else {
                         // Add texture pattern for other biomes
                         if ((x + y) % (tileSize * 2) < tileSize) {
@@ -1040,6 +1054,41 @@
                 ctx.lineTo(screenX, screenY + yOffset);
                 ctx.closePath();
                 ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        
+        function drawSnowTexture(x, y, screenX, screenY, tileSize) {
+            // Draw subtle snow texture with sparkle effect
+            ctx.save();
+            
+            // Random snow sparkles
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 15; i++) {
+                const sx = screenX + Math.random() * tileSize;
+                const sy = screenY + Math.random() * tileSize;
+                const size = 1 + Math.random() * 2;
+                const alpha = 0.3 + Math.random() * 0.4;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.arc(sx, sy, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Snow drifts (subtle curves)
+            ctx.strokeStyle = '#d0e8f0';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.2;
+            for (let i = 0; i < 3; i++) {
+                const driftY = screenY + (i + 1) * (tileSize / 4);
+                ctx.beginPath();
+                ctx.moveTo(screenX, driftY);
+                for (let px = 0; px <= tileSize; px += 20) {
+                    const waveY = Math.sin((x + px) * 0.02 + i) * 5;
+                    ctx.lineTo(screenX + px, driftY + waveY);
+                }
+                ctx.stroke();
             }
             
             ctx.restore();
@@ -1942,16 +1991,118 @@
                     case 'tree':
                     case 'pine':
                         // Trunk
-                        ctx.fillStyle = '#8b4513';
-                        ctx.fillRect(screenX - obj.size * 0.15, screenY, obj.size * 0.3, obj.size * 0.4);
-                        // Leaves (triangle)
+                        ctx.fillStyle = '#6b4423';
+                        ctx.fillRect(screenX - obj.size * 0.12, screenY, obj.size * 0.24, obj.size * 0.35);
+                        // Leaves (triangle layers)
                         ctx.fillStyle = obj.color;
+                        // Bottom layer
                         ctx.beginPath();
-                        ctx.moveTo(screenX, screenY - obj.size);
-                        ctx.lineTo(screenX - obj.size * 0.5, screenY + obj.size * 0.3);
-                        ctx.lineTo(screenX + obj.size * 0.5, screenY + obj.size * 0.3);
+                        ctx.moveTo(screenX, screenY - obj.size * 0.7);
+                        ctx.lineTo(screenX - obj.size * 0.5, screenY + obj.size * 0.2);
+                        ctx.lineTo(screenX + obj.size * 0.5, screenY + obj.size * 0.2);
                         ctx.closePath();
                         ctx.fill();
+                        // Middle layer
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY - obj.size * 0.9);
+                        ctx.lineTo(screenX - obj.size * 0.4, screenY - obj.size * 0.1);
+                        ctx.lineTo(screenX + obj.size * 0.4, screenY - obj.size * 0.1);
+                        ctx.closePath();
+                        ctx.fill();
+                        // Top layer
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY - obj.size);
+                        ctx.lineTo(screenX - obj.size * 0.3, screenY - obj.size * 0.3);
+                        ctx.lineTo(screenX + obj.size * 0.3, screenY - obj.size * 0.3);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                        
+                    case 'snow_pine':
+                        // Snow-covered pine tree like the reference image
+                        ctx.save();
+                        
+                        // Trunk
+                        ctx.fillStyle = '#5a3a2a';
+                        ctx.fillRect(screenX - obj.size * 0.1, screenY + obj.size * 0.1, obj.size * 0.2, obj.size * 0.3);
+                        
+                        // Tree layers (3 tiers of branches)
+                        const layers = [
+                            { y: -obj.size * 0.75, width: 0.35 },
+                            { y: -obj.size * 0.5, width: 0.5 },
+                            { y: -obj.size * 0.25, width: 0.65 }
+                        ];
+                        
+                        for (let i = 0; i < layers.length; i++) {
+                            const layer = layers[i];
+                            
+                            // Dark green base (shadowed underside)
+                            ctx.fillStyle = '#1a3d2a';
+                            ctx.beginPath();
+                            ctx.moveTo(screenX, screenY + layer.y - obj.size * 0.15);
+                            ctx.lineTo(screenX - obj.size * layer.width, screenY + layer.y + obj.size * 0.15);
+                            ctx.lineTo(screenX + obj.size * layer.width, screenY + layer.y + obj.size * 0.15);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Main green body
+                            ctx.fillStyle = '#2d5a3d';
+                            ctx.beginPath();
+                            ctx.moveTo(screenX, screenY + layer.y - obj.size * 0.2);
+                            ctx.lineTo(screenX - obj.size * layer.width * 0.9, screenY + layer.y + obj.size * 0.1);
+                            ctx.lineTo(screenX + obj.size * layer.width * 0.9, screenY + layer.y + obj.size * 0.1);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Snow on top (white cap)
+                            ctx.fillStyle = '#f0f8ff';
+                            ctx.beginPath();
+                            ctx.moveTo(screenX, screenY + layer.y - obj.size * 0.2);
+                            ctx.lineTo(screenX - obj.size * layer.width * 0.5, screenY + layer.y);
+                            ctx.lineTo(screenX + obj.size * layer.width * 0.5, screenY + layer.y);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Snow highlights on branches
+                            ctx.fillStyle = '#ffffff';
+                            ctx.globalAlpha = 0.6;
+                            for (let j = 0; j < 5; j++) {
+                                const hx = screenX + (j - 2) * obj.size * layer.width * 0.2;
+                                const hy = screenY + layer.y + obj.size * 0.05;
+                                ctx.beginPath();
+                                ctx.arc(hx, hy, obj.size * 0.06, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                            ctx.globalAlpha = 1;
+                        }
+                        
+                        // Tree top (point)
+                        ctx.fillStyle = '#2d5a3d';
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY - obj.size);
+                        ctx.lineTo(screenX - obj.size * 0.2, screenY - obj.size * 0.75);
+                        ctx.lineTo(screenX + obj.size * 0.2, screenY - obj.size * 0.75);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Snow on tree top
+                        ctx.fillStyle = '#f0f8ff';
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY - obj.size);
+                        ctx.lineTo(screenX - obj.size * 0.12, screenY - obj.size * 0.8);
+                        ctx.lineTo(screenX + obj.size * 0.12, screenY - obj.size * 0.8);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Snow at base of tree
+                        ctx.fillStyle = '#ffffff';
+                        ctx.globalAlpha = 0.4;
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY + obj.size * 0.35, obj.size * 0.4, obj.size * 0.12, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        
+                        ctx.restore();
                         break;
                         
                     case 'bush':

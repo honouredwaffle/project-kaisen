@@ -212,6 +212,22 @@
             redOrb: { x: 0, y: 0, angle: Math.PI }
         };
         
+        // Domain Expansion state
+        let playerDomain = {
+            active: false,
+            phase: 'expanding', // expanding, lines, cosmic, paint, active
+            phaseTimer: 0,
+            radius: 0,
+            maxRadius: 800,
+            duration: 1800, // 30 seconds at 60fps
+            lines: [], // Speed lines
+            stars: [], // Background stars
+            galaxies: [], // Swirling galaxies
+            blackHole: { angle: 0, accretionRadius: 0 },
+            paintSplats: [], // White paint splatters
+            frozenEnemies: [] // Track which enemies are frozen
+        };
+        
         // Camera
         const camera = {
             x: 0,
@@ -951,6 +967,18 @@
         function updateCursedSpirits() {
             for (const spirit of cursedSpirits) {
                 const data = SPIRIT_GRADES[spirit.grade];
+                
+                // Check if spirit is frozen in player's domain
+                if (playerDomain.active && playerDomain.phase !== 'expanding') {
+                    const ddx = spirit.x - player.x;
+                    const ddy = spirit.y - player.y;
+                    const ddist = Math.sqrt(ddx * ddx + ddy * ddy);
+                    if (ddist < playerDomain.maxRadius) {
+                        // Spirit is frozen - don't update movement or attacks
+                        continue;
+                    }
+                }
+                
                 // Distance to player
                 const dx = player.x - spirit.x;
                 const dy = player.y - spirit.y;
@@ -1087,6 +1115,30 @@
         function updateDisasterCurse() {
             if (activeDisasterCurse) {
                 const boss = activeDisasterCurse;
+                
+                // Check if boss is frozen in player's domain
+                if (playerDomain.active && playerDomain.phase !== 'expanding') {
+                    const ddx = boss.x - player.x;
+                    const ddy = boss.y - player.y;
+                    const ddist = Math.sqrt(ddx * ddx + ddy * ddy);
+                    if (ddist < playerDomain.maxRadius) {
+                        // Boss is frozen - only update visual effects, not movement or attacks
+                        boss.domainTimer--;
+                        if (boss.domainTimer <= 0) {
+                            boss.domainActive = true;
+                            boss.domainTimer = 900;
+                        }
+                        if (boss.domainActive) {
+                            boss.domainDuration--;
+                            if (boss.domainDuration <= 0) {
+                                boss.domainActive = false;
+                                boss.domainDuration = 300;
+                            }
+                        }
+                        return; // Skip rest of update
+                    }
+                }
+                
                 const dx = player.x - boss.x;
                 const dy = player.y - boss.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -2511,6 +2563,69 @@
                         hollowPurple.blueOrb.angle = 0;
                         hollowPurple.redOrb.angle = Math.PI;
                     }
+                } else if (index === 3) { // Domain Expansion
+                    if (!playerDomain.active) {
+                        activateDomain();
+                    }
+                }
+            }
+        }
+        
+        function activateDomain() {
+            playerDomain.active = true;
+            playerDomain.phase = 'expanding';
+            playerDomain.phaseTimer = 60; // 1 second to expand
+            playerDomain.radius = 0;
+            playerDomain.duration = 1800; // 30 seconds
+            playerDomain.frozenEnemies = [];
+            
+            // Initialize speed lines
+            playerDomain.lines = [];
+            for (let i = 0; i < 100; i++) {
+                playerDomain.lines.push({
+                    x: (Math.random() - 0.5) * canvas.width * 2,
+                    y: (Math.random() - 0.5) * canvas.height * 2,
+                    z: Math.random() * 1000, // Depth for 3D effect
+                    speed: 20 + Math.random() * 30,
+                    color: ['#4444ff', '#ff4444', '#aa44ff', '#ffffff'][Math.floor(Math.random() * 4)],
+                    length: 50 + Math.random() * 100
+                });
+            }
+            
+            // Initialize stars
+            playerDomain.stars = [];
+            for (let i = 0; i < 200; i++) {
+                playerDomain.stars.push({
+                    x: (Math.random() - 0.5) * 2000,
+                    y: (Math.random() - 0.5) * 2000,
+                    size: Math.random() * 2,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Initialize galaxies
+            playerDomain.galaxies = [];
+            for (let i = 0; i < 5; i++) {
+                playerDomain.galaxies.push({
+                    x: (Math.random() - 0.5) * 1500,
+                    y: (Math.random() - 0.5) * 1500,
+                    size: 100 + Math.random() * 150,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.002,
+                    color: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`
+                });
+            }
+            
+            // Initialize paint splats (empty initially)
+            playerDomain.paintSplats = [];
+            
+            // Freeze all enemies currently in range
+            for (const spirit of cursedSpirits) {
+                const dx = spirit.x - player.x;
+                const dy = spirit.y - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < playerDomain.maxRadius) {
+                    playerDomain.frozenEnemies.push(spirit);
                 }
             }
         }
@@ -2924,6 +3039,261 @@
                 hollowPurple.active = false;
                 hollowPurple.fused = false;
             }
+        }
+        
+        function updatePlayerDomain() {
+            if (!playerDomain.active) return;
+            
+            playerDomain.duration--;
+            
+            // Phase management
+            switch(playerDomain.phase) {
+                case 'expanding':
+                    // Expand black circle
+                    playerDomain.radius += (playerDomain.maxRadius - playerDomain.radius) * 0.05;
+                    playerDomain.phaseTimer--;
+                    if (playerDomain.phaseTimer <= 0 || playerDomain.radius > playerDomain.maxRadius * 0.95) {
+                        playerDomain.phase = 'lines';
+                        playerDomain.phaseTimer = 180; // 3 seconds of speed lines
+                    }
+                    break;
+                    
+                case 'lines':
+                    // Update speed lines
+                    playerDomain.phaseTimer--;
+                    for (const line of playerDomain.lines) {
+                        line.z -= line.speed;
+                        if (line.z <= 0) {
+                            line.z = 1000;
+                            line.x = (Math.random() - 0.5) * canvas.width * 2;
+                            line.y = (Math.random() - 0.5) * canvas.height * 2;
+                        }
+                    }
+                    if (playerDomain.phaseTimer <= 0) {
+                        playerDomain.phase = 'cosmic';
+                        playerDomain.phaseTimer = 90; // 1.5 seconds of paint
+                    }
+                    break;
+                    
+                case 'cosmic':
+                    // Generate paint splats during this phase
+                    playerDomain.phaseTimer--;
+                    if (playerDomain.phaseTimer > 0 && Math.random() < 0.3) {
+                        playerDomain.paintSplats.push({
+                            x: (Math.random() - 0.5) * canvas.width,
+                            y: (Math.random() - 0.5) * canvas.height,
+                            size: 20 + Math.random() * 80,
+                            life: 90, // 1.5 seconds
+                            maxLife: 90
+                        });
+                    }
+                    if (playerDomain.phaseTimer <= 0) {
+                        playerDomain.phase = 'active';
+                    }
+                    break;
+                    
+                case 'active':
+                    // Domain is active, just update effects
+                    break;
+            }
+            
+            // Update galaxies rotation
+            for (const galaxy of playerDomain.galaxies) {
+                galaxy.rotation += galaxy.rotationSpeed;
+            }
+            
+            // Update black hole
+            playerDomain.blackHole.angle += 0.02;
+            playerDomain.blackHole.accretionRadius = 60 + Math.sin(Date.now() * 0.002) * 10;
+            
+            // Update paint splats
+            for (let i = playerDomain.paintSplats.length - 1; i >= 0; i--) {
+                playerDomain.paintSplats[i].life--;
+                if (playerDomain.paintSplats[i].life <= 0) {
+                    playerDomain.paintSplats.splice(i, 1);
+                }
+            }
+            
+            // End domain
+            if (playerDomain.duration <= 0) {
+                playerDomain.active = false;
+                playerDomain.frozenEnemies = [];
+            }
+        }
+        
+        function drawPlayerDomain() {
+            if (!playerDomain.active) return;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            ctx.save();
+            
+            // Create domain mask - only draw inside the domain circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, playerDomain.radius, 0, Math.PI * 2);
+            ctx.clip();
+            
+            // Fill with deep space void
+            const voidGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, playerDomain.radius);
+            voidGrad.addColorStop(0, '#0a0014');
+            voidGrad.addColorStop(0.5, '#050008');
+            voidGrad.addColorStop(1, '#000000');
+            ctx.fillStyle = voidGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw speed lines during lines phase
+            if (playerDomain.phase === 'lines' || playerDomain.phase === 'expanding') {
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                for (const line of playerDomain.lines) {
+                    const scale = 500 / line.z;
+                    const x = line.x * scale;
+                    const y = line.y * scale;
+                    const length = line.length * scale;
+                    const width = Math.max(1, 3 * scale);
+                    
+                    ctx.strokeStyle = line.color;
+                    ctx.lineWidth = width;
+                    ctx.globalAlpha = Math.min(1, (1000 - line.z) / 200);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x - (x / line.z) * length, y - (y / line.z) * length);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            
+            // Draw cosmic background (stars and galaxies)
+            if (playerDomain.phase !== 'expanding') {
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                
+                // Draw stars
+                for (const star of playerDomain.stars) {
+                    const twinkle = Math.sin(Date.now() * 0.005 + star.twinkle) * 0.5 + 0.5;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + twinkle * 0.7})`;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Draw galaxies
+                for (const galaxy of playerDomain.galaxies) {
+                    ctx.save();
+                    ctx.translate(galaxy.x, galaxy.y);
+                    ctx.rotate(galaxy.rotation);
+                    
+                    // Galaxy core
+                    const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, galaxy.size * 0.3);
+                    coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                    coreGrad.addColorStop(0.5, galaxy.color);
+                    coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = coreGrad;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, galaxy.size, galaxy.size * 0.3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Spiral arms
+                    for (let arm = 0; arm < 2; arm++) {
+                        ctx.strokeStyle = galaxy.color;
+                        ctx.lineWidth = galaxy.size * 0.05;
+                        ctx.globalAlpha = 0.4;
+                        ctx.beginPath();
+                        for (let t = 0; t < 20; t++) {
+                            const angle = (arm * Math.PI) + t * 0.3;
+                            const r = t * galaxy.size * 0.04;
+                            const x = Math.cos(angle) * r;
+                            const y = Math.sin(angle) * r * 0.3;
+                            if (t === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+                    }
+                    
+                    ctx.restore();
+                }
+                
+                // Draw black hole at center
+                const bh = playerDomain.blackHole;
+                
+                // Accretion disk
+                ctx.save();
+                ctx.rotate(bh.angle);
+                const diskGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, bh.accretionRadius);
+                diskGrad.addColorStop(0, 'rgba(255, 100, 0, 0.8)');
+                diskGrad.addColorStop(0.3, 'rgba(255, 50, 100, 0.5)');
+                diskGrad.addColorStop(0.6, 'rgba(100, 0, 200, 0.3)');
+                diskGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = diskGrad;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, bh.accretionRadius * 1.5, bh.accretionRadius * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                
+                // Event horizon (black center)
+                ctx.fillStyle = '#000000';
+                ctx.shadowColor = '#440044';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                ctx.restore();
+            }
+            
+            // Draw white paint splats
+            if (playerDomain.paintSplats.length > 0) {
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                for (const splat of playerDomain.paintSplats) {
+                    const alpha = splat.life / splat.maxLife;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+                    ctx.beginPath();
+                    // Irregular splat shape
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i / 8) * Math.PI * 2;
+                        const r = splat.size * (0.7 + Math.random() * 0.6);
+                        const x = splat.x + Math.cos(angle) * r;
+                        const y = splat.y + Math.sin(angle) * r;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Drips
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+                    for (let i = 0; i < 3; i++) {
+                        const dx = splat.x + (Math.random() - 0.5) * splat.size;
+                        const dy = splat.y + Math.random() * splat.size * 0.8;
+                        ctx.beginPath();
+                        ctx.arc(dx, dy, splat.size * 0.1, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+            
+            // Draw domain border
+            ctx.strokeStyle = '#440044';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, playerDomain.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Pulsing border effect
+            const pulse = Math.sin(Date.now() * 0.005) * 0.3 + 0.7;
+            ctx.strokeStyle = '#660066';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = pulse * 0.5;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, playerDomain.radius - 5, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.restore();
         }
         
         function drawHollowPurple() {
@@ -3716,6 +4086,7 @@
             updateMaxBlue();
             updateReversalRed();
             updateHollowPurple();
+            updatePlayerDomain();
             updateDamageCounter();
             updateDamageNumbers();
             updateHitEffects();
@@ -3740,6 +4111,7 @@
             drawSpiritProjectiles();
             drawCursedSpirits();
             drawDisasterCurse();
+            drawPlayerDomain();
             drawPlayer();
             drawBossHealthBar();
             drawDamageCounter();

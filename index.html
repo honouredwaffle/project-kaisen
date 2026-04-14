@@ -3333,107 +3333,69 @@
                     ctx.restore();
                 }
                 
-                // Draw black hole at center - ENHANCED AND PROMINENT
+                // Draw black hole at center - Clean Gojo-style
                 const bh = playerDomain.blackHole;
                 
-                // Gravitational lensing effect (distorted background around black hole)
-                const lensRadius = 280;
-                const lensGrad = ctx.createRadialGradient(0, 0, 90, 0, 0, lensRadius);
-                lensGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                lensGrad.addColorStop(0.3, 'rgba(20, 0, 40, 0.3)');
-                lensGrad.addColorStop(0.6, 'rgba(40, 0, 80, 0.2)');
-                lensGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = lensGrad;
-                ctx.beginPath();
-                ctx.arc(0, 0, lensRadius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Outer glow
-                ctx.shadowBlur = 120;
-                ctx.shadowColor = '#8800cc';
-                
-                // Multiple accretion disk layers
+                // Wispy accretion disk (subtle, rotating)
                 ctx.save();
-                ctx.rotate(bh.angle);
+                ctx.rotate(bh.angle * 0.3);
+                ctx.globalAlpha = 0.4;
                 
-                // Outer disk (larger and more visible)
-                const outerGrad = ctx.createRadialGradient(0, 0, 70, 0, 0, bh.accretionRadius * 2.8);
-                outerGrad.addColorStop(0, 'rgba(255, 220, 120, 0.85)');
-                outerGrad.addColorStop(0.3, 'rgba(255, 120, 180, 0.65)');
-                outerGrad.addColorStop(0.6, 'rgba(200, 60, 240, 0.45)');
-                outerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = outerGrad;
+                // Top wisp
+                const wispGrad = ctx.createRadialGradient(-30, -60, 0, -30, -60, 80);
+                wispGrad.addColorStop(0, 'rgba(200, 220, 255, 0.6)');
+                wispGrad.addColorStop(0.5, 'rgba(150, 180, 220, 0.3)');
+                wispGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = wispGrad;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, bh.accretionRadius * 3.2, bh.accretionRadius * 0.9, 0, 0, Math.PI * 2);
+                ctx.ellipse(-30, -60, 60, 25, -0.3, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Middle disk
-                const midGrad = ctx.createRadialGradient(0, 0, 55, 0, 0, bh.accretionRadius * 1.8);
-                midGrad.addColorStop(0, 'rgba(255, 250, 200, 0.92)');
-                midGrad.addColorStop(0.3, 'rgba(255, 170, 120, 0.82)');
-                midGrad.addColorStop(0.6, 'rgba(240, 100, 200, 0.55)');
-                midGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = midGrad;
+                // Bottom wisp
+                const wispGrad2 = ctx.createRadialGradient(30, 60, 0, 30, 60, 80);
+                wispGrad2.addColorStop(0, 'rgba(200, 220, 255, 0.5)');
+                wispGrad2.addColorStop(0.5, 'rgba(150, 180, 220, 0.25)');
+                wispGrad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = wispGrad2;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, bh.accretionRadius * 2.6, bh.accretionRadius * 0.75, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Inner bright disk
-                const diskGrad = ctx.createRadialGradient(0, 0, 45, 0, 0, bh.accretionRadius * 1.4);
-                diskGrad.addColorStop(0, 'rgba(255, 255, 230, 0.98)');
-                diskGrad.addColorStop(0.2, 'rgba(255, 200, 120, 0.96)');
-                diskGrad.addColorStop(0.5, 'rgba(250, 120, 200, 0.75)');
-                diskGrad.addColorStop(0.8, 'rgba(180, 60, 240, 0.45)');
-                diskGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = diskGrad;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, bh.accretionRadius * 2.2, bh.accretionRadius * 0.65, 0, 0, Math.PI * 2);
+                ctx.ellipse(30, 60, 55, 22, 0.3, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
                 
-                // Photon ring (bright ring around event horizon)
-                ctx.strokeStyle = '#ffeebb';
-                ctx.lineWidth = 8;
-                ctx.globalAlpha = 0.95;
+                // Main bright photon ring (the iconic white/blue glow)
+                ctx.shadowBlur = 60;
+                ctx.shadowColor = '#88aaff';
+                ctx.strokeStyle = '#ccddff';
+                ctx.lineWidth = 12;
+                ctx.globalAlpha = 0.9;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 110, 45, bh.angle * 0.2, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Inner bright ring
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 6;
                 ctx.shadowBlur = 40;
-                ctx.shadowColor = '#ffdd77';
+                ctx.shadowColor = '#aaccff';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 80, 32, bh.angle * 0.5, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 100, 40, bh.angle * 0.2, 0, Math.PI * 2);
                 ctx.stroke();
                 
-                // Secondary photon ring
-                ctx.strokeStyle = '#ffaa66';
-                ctx.lineWidth = 4;
-                ctx.globalAlpha = 0.75;
+                // Event horizon (pure black center)
+                ctx.fillStyle = '#000000';
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 92, 38, -bh.angle * 0.3, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.arc(0, 0, 85, 0, Math.PI * 2);
+                ctx.fill();
                 
-                // Third photon ring
-                ctx.strokeStyle = '#ff8844';
+                // Subtle inner edge glow
+                ctx.strokeStyle = '#4466aa';
                 ctx.lineWidth = 2;
                 ctx.globalAlpha = 0.5;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 105, 44, bh.angle * 0.2, 0, Math.PI * 2);
+                ctx.arc(0, 0, 83, 0, Math.PI * 2);
                 ctx.stroke();
-                
-                // Event horizon (black center) - MUCH larger
-                ctx.fillStyle = '#000000';
-                ctx.shadowColor = '#cc00ff';
-                ctx.shadowBlur = 80;
-                ctx.globalAlpha = 1;
-                ctx.beginPath();
-                ctx.arc(0, 0, 75, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Inner event horizon glow
-                ctx.strokeStyle = '#8800cc';
-                ctx.lineWidth = 5;
-                ctx.beginPath();
-                ctx.arc(0, 0, 70, 0, Math.PI * 2);
-                ctx.stroke();
-                
-                ctx.shadowBlur = 0;
                 
                 ctx.restore();
             }
@@ -4380,11 +4342,11 @@
             drawBiomeOverlay();
             drawBiomeObjects();
             drawSpiritProjectiles();
-            drawCursedSpirits();
+            drawPlayerDomainBackground(); // Draw domain void/bg FIRST
+            drawCursedSpirits(); // Enemies on top of domain background
             drawDisasterCurse();
-            drawPlayerDomainBackground(); // Draw domain void/bg before player
             drawPlayer();
-            drawPlayerDomainForeground(); // Draw domain border/text on top
+            drawPlayerDomainForeground(); // Domain border/text on top of everything
             drawBossHealthBar();
             drawDamageCounter();
             drawMaxBlue();

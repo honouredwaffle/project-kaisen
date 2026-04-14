@@ -3526,76 +3526,65 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
             
-            // Biome zones - clean diagonal layout with sectors
+            // Biome zones - accurate diagonal positions
             const centerX = mapX + mapWidth / 2;
             const centerY = mapY + mapHeight / 2;
-            const mapRadius = Math.min(mapWidth, mapHeight) / 2 - 5;
+            const mapScale = Math.min(mapWidth, mapHeight) / (BIOME_SIZE * 2.5); // Scale to fit biomes
             
-            // Draw background grid
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 1;
-            for (let i = 1; i <= 3; i++) {
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, mapRadius * (i / 4), 0, Math.PI * 2);
-                ctx.stroke();
-            }
-            
-            // Draw biome sectors (pie slices)
-            const sectorAngle = Math.PI / 2; // 90 degrees each
-            const biomeOrder = ['VOLCANO', 'SAND', 'CITY', 'SNOW'];
-            const startAngle = -Math.PI / 4; // Start at top-left diagonal
-            
-            for (let i = 0; i < 4; i++) {
-                const biome = biomeOrder[i];
+            // Draw biome positions as dots with influence circles
+            for (const biome of BIOMES) {
+                const center = BIOME_CENTERS[biome];
                 const colors = BIOME_COLORS[biome];
-                const angle1 = startAngle + i * sectorAngle;
-                const angle2 = startAngle + (i + 1) * sectorAngle;
+                const bx = centerX + center.x * mapScale;
+                const by = centerY + center.y * mapScale;
                 
-                // Draw sector
+                // Biome influence area (subtle circle)
                 ctx.fillStyle = colors.ground;
-                ctx.globalAlpha = 0.6;
+                ctx.globalAlpha = 0.3;
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, mapRadius * 0.85, angle1, angle2);
-                ctx.closePath();
+                ctx.arc(bx, by, BIOME_SIZE * 0.5 * mapScale, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.globalAlpha = 1;
                 
-                // Sector border
-                ctx.strokeStyle = colors.grid;
-                ctx.lineWidth = 2;
+                // Biome center dot
+                ctx.fillStyle = colors.ground;
+                ctx.beginPath();
+                ctx.arc(bx, by, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Border
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(bx, by, 6, 0, Math.PI * 2);
                 ctx.stroke();
                 
-                // Label position (middle of sector)
-                const labelAngle = angle1 + sectorAngle / 2;
-                const labelRadius = mapRadius * 0.6;
-                const lx = centerX + Math.cos(labelAngle) * labelRadius;
-                const ly = centerY + Math.sin(labelAngle) * labelRadius;
+                // Label offset based on position
+                let lx = bx, ly = by - 12;
+                if (biome === 'VOLCANO') { lx = bx - 25; ly = by - 8; }
+                if (biome === 'SAND') { lx = bx + 25; ly = by - 8; }
+                if (biome === 'SNOW') { lx = bx - 25; ly = by + 15; }
+                if (biome === 'CITY') { lx = bx + 25; ly = by + 15; }
+                if (biome === 'FOREST') { ly = by + 15; }
                 
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 9px "Segoe UI", sans-serif';
+                ctx.font = 'bold 8px "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(biome, lx, ly);
             }
             
-            // Forest center (inner circle)
-            ctx.fillStyle = BIOME_COLORS['FOREST'].ground;
-            ctx.globalAlpha = 0.8;
+            // Connection lines between biomes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, mapRadius * 0.25, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            ctx.strokeStyle = BIOME_COLORS['FOREST'].grid;
-            ctx.lineWidth = 2;
+            ctx.moveTo(centerX + BIOME_CENTERS.VOLCANO.x * mapScale, centerY + BIOME_CENTERS.VOLCANO.y * mapScale);
+            ctx.lineTo(centerX, centerY);
+            ctx.lineTo(centerX + BIOME_CENTERS.SAND.x * mapScale, centerY + BIOME_CENTERS.SAND.y * mapScale);
+            ctx.moveTo(centerX + BIOME_CENTERS.SNOW.x * mapScale, centerY + BIOME_CENTERS.SNOW.y * mapScale);
+            ctx.lineTo(centerX, centerY);
+            ctx.lineTo(centerX + BIOME_CENTERS.CITY.x * mapScale, centerY + BIOME_CENTERS.CITY.y * mapScale);
             ctx.stroke();
-            
-            // Forest label
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 8px "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('FOREST', centerX, centerY);
             
             // Disaster curse spawn locations
             for (const curse of Object.values(DISASTER_CURSES)) {

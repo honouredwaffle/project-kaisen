@@ -223,7 +223,7 @@
             lines: [], // Speed lines
             stars: [], // Background stars
             galaxies: [], // Swirling galaxies
-            blackHole: { angle: 0, accretionRadius: 0 },
+            blackHole: { angle: 0, accretionRadius: 90 },
             paintSplats: [], // White paint splatters
             frozenEnemies: [] // Track which enemies are frozen
         };
@@ -857,7 +857,7 @@
                     if (!playerDomain.footstepDistance) playerDomain.footstepDistance = 0;
                     playerDomain.footstepDistance += distMoved;
                     
-                    if (playerDomain.footstepDistance > 40) { // Create ripple every 40 pixels
+                    if (playerDomain.footstepDistance > 200) { // Create ripple every ~5 steps (200 pixels)
                         playerDomain.footstepRipples.push({
                             x: player.x,
                             y: player.y,
@@ -2602,6 +2602,10 @@
             playerDomain.duration = 1800; // 30 seconds
             playerDomain.frozenEnemies = [];
             
+            // Store fixed domain center at player position when cast
+            playerDomain.centerX = player.x;
+            playerDomain.centerY = player.y;
+            
             // Initialize dramatic speed lines (more intense, radiating from center)
             playerDomain.lines = [];
             for (let i = 0; i < 150; i++) {
@@ -3164,18 +3168,28 @@
         function drawPlayerDomainBackground() {
             if (!playerDomain.active) return;
             
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+            // Calculate domain center on screen (fixed world position)
+            const domainScreenX = playerDomain.centerX - camera.x;
+            const domainScreenY = playerDomain.centerY - camera.y;
+            
+            // Only draw if domain is visible on screen
+            const distFromCenter = Math.sqrt(
+                Math.pow(domainScreenX - canvas.width/2, 2) + 
+                Math.pow(domainScreenY - canvas.height/2, 2)
+            );
+            if (distFromCenter > playerDomain.maxRadius + Math.max(canvas.width, canvas.height)) {
+                return; // Domain is off-screen
+            }
             
             ctx.save();
             
-            // Create domain mask - only draw inside the domain circle
+            // Create domain mask - only draw inside the domain circle at fixed position
             ctx.beginPath();
-            ctx.arc(centerX, centerY, playerDomain.radius, 0, Math.PI * 2);
+            ctx.arc(domainScreenX, domainScreenY, playerDomain.radius, 0, Math.PI * 2);
             ctx.clip();
             
             // Fill with infinite void - darker at edges, deep purple-black center
-            const voidGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, playerDomain.radius);
+            const voidGrad = ctx.createRadialGradient(domainScreenX, domainScreenY, 0, domainScreenX, domainScreenY, playerDomain.radius);
             voidGrad.addColorStop(0, '#0d0020');
             voidGrad.addColorStop(0.3, '#080014');
             voidGrad.addColorStop(0.7, '#030008');
@@ -3183,10 +3197,11 @@
             ctx.fillStyle = voidGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw water ripple footsteps
+            // Draw water ripple footsteps (relative to domain center)
             if (playerDomain.phase !== 'expanding' && playerDomain.phase !== 'lines') {
                 ctx.save();
-                ctx.translate(centerX - player.x, centerY - player.y);
+                // Translate so domain center is at origin, then draw ripples at their world positions
+                ctx.translate(domainScreenX - playerDomain.centerX, domainScreenY - playerDomain.centerY);
                 
                 // Draw existing ripples
                 for (let i = playerDomain.footstepRipples.length - 1; i >= 0; i--) {
@@ -3222,7 +3237,7 @@
             // Draw dramatic speed lines during lines/expanding phase
             if (playerDomain.phase === 'lines' || playerDomain.phase === 'expanding') {
                 ctx.save();
-                ctx.translate(centerX, centerY);
+                ctx.translate(domainScreenX, domainScreenY);
                 
                 // Draw radiating speed lines from center
                 for (const line of playerDomain.lines) {
@@ -3268,7 +3283,7 @@
             // Draw cosmic background (stars and galaxies)
             if (playerDomain.phase !== 'expanding') {
                 ctx.save();
-                ctx.translate(centerX, centerY);
+                ctx.translate(domainScreenX, domainScreenY);
                 
                 // Draw distant stars with parallax effect
                 for (const star of playerDomain.stars) {
@@ -3322,8 +3337,8 @@
                 const bh = playerDomain.blackHole;
                 
                 // Gravitational lensing effect (distorted background around black hole)
-                const lensRadius = 120;
-                const lensGrad = ctx.createRadialGradient(0, 0, 40, 0, 0, lensRadius);
+                const lensRadius = 180;
+                const lensGrad = ctx.createRadialGradient(0, 0, 60, 0, 0, lensRadius);
                 lensGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
                 lensGrad.addColorStop(0.3, 'rgba(20, 0, 40, 0.3)');
                 lensGrad.addColorStop(0.6, 'rgba(40, 0, 80, 0.2)');
@@ -3342,72 +3357,72 @@
                 ctx.rotate(bh.angle);
                 
                 // Outer disk (larger and more visible)
-                const outerGrad = ctx.createRadialGradient(0, 0, 35, 0, 0, bh.accretionRadius * 2);
-                outerGrad.addColorStop(0, 'rgba(255, 180, 80, 0.7)');
-                outerGrad.addColorStop(0.3, 'rgba(255, 80, 120, 0.5)');
-                outerGrad.addColorStop(0.6, 'rgba(150, 40, 200, 0.3)');
+                const outerGrad = ctx.createRadialGradient(0, 0, 50, 0, 0, bh.accretionRadius * 2.5);
+                outerGrad.addColorStop(0, 'rgba(255, 200, 100, 0.8)');
+                outerGrad.addColorStop(0.3, 'rgba(255, 100, 150, 0.6)');
+                outerGrad.addColorStop(0.6, 'rgba(180, 50, 220, 0.4)');
                 outerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = outerGrad;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, bh.accretionRadius * 2.2, bh.accretionRadius * 0.6, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, bh.accretionRadius * 2.8, bh.accretionRadius * 0.8, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
                 // Middle disk
-                const midGrad = ctx.createRadialGradient(0, 0, 30, 0, 0, bh.accretionRadius * 1.3);
-                midGrad.addColorStop(0, 'rgba(255, 220, 150, 0.8)');
-                midGrad.addColorStop(0.3, 'rgba(255, 120, 80, 0.7)');
-                midGrad.addColorStop(0.6, 'rgba(200, 60, 150, 0.4)');
+                const midGrad = ctx.createRadialGradient(0, 0, 40, 0, 0, bh.accretionRadius * 1.6);
+                midGrad.addColorStop(0, 'rgba(255, 240, 180, 0.9)');
+                midGrad.addColorStop(0.3, 'rgba(255, 150, 100, 0.8)');
+                midGrad.addColorStop(0.6, 'rgba(220, 80, 180, 0.5)');
                 midGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = midGrad;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, bh.accretionRadius * 1.8, bh.accretionRadius * 0.5, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, bh.accretionRadius * 2.2, bh.accretionRadius * 0.65, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
                 // Inner bright disk
-                const diskGrad = ctx.createRadialGradient(0, 0, 25, 0, 0, bh.accretionRadius);
-                diskGrad.addColorStop(0, 'rgba(255, 240, 200, 0.95)');
-                diskGrad.addColorStop(0.2, 'rgba(255, 150, 80, 0.9)');
-                diskGrad.addColorStop(0.5, 'rgba(220, 80, 150, 0.6)');
-                diskGrad.addColorStop(0.8, 'rgba(120, 40, 200, 0.3)');
+                const diskGrad = ctx.createRadialGradient(0, 0, 35, 0, 0, bh.accretionRadius * 1.2);
+                diskGrad.addColorStop(0, 'rgba(255, 250, 220, 0.98)');
+                diskGrad.addColorStop(0.2, 'rgba(255, 180, 100, 0.95)');
+                diskGrad.addColorStop(0.5, 'rgba(240, 100, 180, 0.7)');
+                diskGrad.addColorStop(0.8, 'rgba(150, 50, 220, 0.4)');
                 diskGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = diskGrad;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, bh.accretionRadius * 1.5, bh.accretionRadius * 0.45, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, bh.accretionRadius * 1.8, bh.accretionRadius * 0.55, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
                 
                 // Photon ring (bright ring around event horizon)
-                ctx.strokeStyle = '#ffcc88';
-                ctx.lineWidth = 4;
-                ctx.globalAlpha = 0.9;
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = '#ffaa66';
+                ctx.strokeStyle = '#ffddaa';
+                ctx.lineWidth = 6;
+                ctx.globalAlpha = 0.95;
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#ffcc66';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 40, 15, bh.angle * 0.5, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 55, 22, bh.angle * 0.5, 0, Math.PI * 2);
                 ctx.stroke();
                 
                 // Secondary photon ring
-                ctx.strokeStyle = '#ff8844';
-                ctx.lineWidth = 2;
-                ctx.globalAlpha = 0.6;
+                ctx.strokeStyle = '#ff9955';
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = 0.7;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 48, 18, -bh.angle * 0.3, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 65, 26, -bh.angle * 0.3, 0, Math.PI * 2);
                 ctx.stroke();
                 
-                // Event horizon (black center) - larger and more prominent
+                // Event horizon (black center) - MUCH larger
                 ctx.fillStyle = '#000000';
-                ctx.shadowColor = '#8800ff';
-                ctx.shadowBlur = 40;
+                ctx.shadowColor = '#aa00ff';
+                ctx.shadowBlur = 60;
                 ctx.globalAlpha = 1;
                 ctx.beginPath();
-                ctx.arc(0, 0, 35, 0, Math.PI * 2);
+                ctx.arc(0, 0, 50, 0, Math.PI * 2);
                 ctx.fill();
                 
                 // Inner event horizon glow
-                ctx.strokeStyle = '#440066';
-                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#6600aa';
+                ctx.lineWidth = 4;
                 ctx.beginPath();
-                ctx.arc(0, 0, 32, 0, Math.PI * 2);
+                ctx.arc(0, 0, 46, 0, Math.PI * 2);
                 ctx.stroke();
                 
                 ctx.shadowBlur = 0;
@@ -3418,7 +3433,7 @@
             // Draw white paint splats
             if (playerDomain.paintSplats.length > 0) {
                 ctx.save();
-                ctx.translate(centerX, centerY);
+                ctx.translate(domainScreenX, domainScreenY);
                 for (const splat of playerDomain.paintSplats) {
                     const alpha = splat.life / splat.maxLife;
                     ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
@@ -3454,8 +3469,18 @@
         function drawPlayerDomainForeground() {
             if (!playerDomain.active) return;
             
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+            // Calculate domain center on screen (fixed world position)
+            const domainScreenX = playerDomain.centerX - camera.x;
+            const domainScreenY = playerDomain.centerY - camera.y;
+            
+            // Only draw if domain is visible on screen
+            const distFromCenter = Math.sqrt(
+                Math.pow(domainScreenX - canvas.width/2, 2) + 
+                Math.pow(domainScreenY - canvas.height/2, 2)
+            );
+            if (distFromCenter > playerDomain.maxRadius + Math.max(canvas.width, canvas.height)) {
+                return; // Domain is off-screen
+            }
             
             ctx.save();
             
@@ -3464,7 +3489,7 @@
             const textDisplayDuration = 180; // 3 seconds at 60fps
             if (playerDomain.phase !== 'expanding' && playerDomain.phase !== 'lines' && domainTimeElapsed < textDisplayDuration) {
                 ctx.save();
-                ctx.translate(centerX, centerY);
+                ctx.translate(domainScreenX, domainScreenY);
                 
                 // Fade in then fade out
                 let textAlpha;
@@ -3503,14 +3528,14 @@
                 ctx.restore();
             }
             
-            // Draw domain border - glowing purple barrier
+            // Draw domain border - glowing purple barrier at fixed position
             ctx.shadowBlur = 20;
             ctx.shadowColor = '#660066';
             ctx.strokeStyle = '#440044';
             ctx.lineWidth = 4;
             ctx.globalAlpha = 0.9;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, playerDomain.radius, 0, Math.PI * 2);
+            ctx.arc(domainScreenX, domainScreenY, playerDomain.radius, 0, Math.PI * 2);
             ctx.stroke();
             
             // Inner pulsing border
@@ -3519,7 +3544,7 @@
             ctx.lineWidth = 2;
             ctx.globalAlpha = pulse * 0.6;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, playerDomain.radius - 8, 0, Math.PI * 2);
+            ctx.arc(domainScreenX, domainScreenY, playerDomain.radius - 8, 0, Math.PI * 2);
             ctx.stroke();
             
             // Outer glow ring
@@ -3527,7 +3552,7 @@
             ctx.lineWidth = 1;
             ctx.globalAlpha = pulse * 0.3;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, playerDomain.radius + 10, 0, Math.PI * 2);
+            ctx.arc(domainScreenX, domainScreenY, playerDomain.radius + 10, 0, Math.PI * 2);
             ctx.stroke();
             
             ctx.shadowBlur = 0;

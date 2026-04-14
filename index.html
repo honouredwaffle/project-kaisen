@@ -2818,36 +2818,114 @@
                     ctx.restore();
                 }
                 
-                // Energy particles being pulled to center
+                // Swirling energy vortex between orbs
+                if (fusionProgress > 0.15) {
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    const vortexIntensity = (fusionProgress - 0.15) / 0.85;
+                    
+                    // Outer spiral arms
+                    for (let arm = 0; arm < 3; arm++) {
+                        ctx.save();
+                        ctx.rotate(time * (2 + arm * 0.5) + arm * (Math.PI * 2 / 3));
+                        ctx.strokeStyle = `rgba(200, 100, 255, ${vortexIntensity * 0.6})`;
+                        ctx.lineWidth = 3;
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#aa44ff';
+                        ctx.beginPath();
+                        for (let i = 0; i < 20; i++) {
+                            const r = 10 + i * 3;
+                            const a = i * 0.3;
+                            const x = Math.cos(a) * r;
+                            const y = Math.sin(a) * r;
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                    
+                    // Inner energy swirl
+                    ctx.rotate(-time * 4);
+                    ctx.strokeStyle = `rgba(255, 200, 255, ${vortexIntensity * 0.8})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let i = 0; i < 30; i++) {
+                        const r = 5 + i * 1.5;
+                        const a = i * 0.5;
+                        const x = Math.cos(a) * r;
+                        const y = Math.sin(a) * r;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                // Energy particles being pulled to center with trails
                 if (fusionProgress > 0.2) {
-                    ctx.shadowBlur = 15;
-                    const particleCount = Math.floor(fusionProgress * 20);
+                    const particleCount = Math.floor(fusionProgress * 30);
                     for (let i = 0; i < particleCount; i++) {
-                        const angle = (time * 2 + i * 0.3) % (Math.PI * 2);
-                        const dist = 25 * (1 - fusionProgress) + 3;
+                        const angle = (time * 3 + i * 0.2) % (Math.PI * 2);
+                        const dist = 35 * (1 - fusionProgress * 0.8) + 5;
                         const px = centerX + Math.cos(angle) * dist;
                         const py = centerY + Math.sin(angle) * dist;
+                        const trailLength = 8 + fusionProgress * 10;
+                        
                         const color = i % 3 === 0 ? '#ffffff' : (i % 3 === 1 ? '#8888ff' : '#ff8888');
+                        
+                        // Particle trail
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 2;
+                        ctx.globalAlpha = 0.6;
+                        ctx.beginPath();
+                        ctx.moveTo(px, py);
+                        ctx.lineTo(px - Math.cos(angle) * trailLength, py - Math.sin(angle) * trailLength);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                        
+                        // Particle head
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = color;
                         ctx.fillStyle = color;
                         ctx.beginPath();
-                        ctx.arc(px, py, 1.5 + pulse * 2, 0, Math.PI * 2);
+                        ctx.arc(px, py, 2 + pulse * 2, 0, Math.PI * 2);
                         ctx.fill();
                     }
                 }
                 
-                // Draw fusion percentage with glow
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#aa44ff';
+                // Screen shake intensity based on fusion progress
+                if (fusionProgress > 0.5) {
+                    const shakeIntensity = (fusionProgress - 0.5) * 8;
+                    ctx.translate((Math.random() - 0.5) * shakeIntensity, (Math.random() - 0.5) * shakeIntensity);
+                }
+                
+                // Draw fusion percentage with intense glow
+                const glowIntensity = 10 + fusionProgress * 30;
+                ctx.shadowBlur = glowIntensity;
+                ctx.shadowColor = '#ff00ff';
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 18px "Segoe UI", sans-serif';
+                ctx.font = 'bold 20px "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 const percentText = Math.floor(fusionProgress * 100) + '%';
-                ctx.fillText(percentText, centerX, centerY - 45);
+                ctx.fillText(percentText, centerX, centerY - 50);
                 
-                // Shake effect when nearly fused
-                if (fusionProgress > 0.75) {
-                    const shake = (fusionProgress - 0.75) * 5;
-                    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+                // FUSION text when close
+                if (fusionProgress > 0.7) {
+                    ctx.shadowBlur = 20 + fastPulse * 20;
+                    ctx.shadowColor = '#ff00ff';
+                    ctx.fillStyle = `rgba(255, 0, 255, ${0.5 + fastPulse * 0.5})`;
+                    ctx.font = 'bold 14px "Segoe UI", sans-serif';
+                    ctx.fillText('FUSION', centerX, centerY - 70);
+                }
+                
+                // HOLLOW PURPLE text when almost ready
+                if (fusionProgress > 0.9) {
+                    ctx.shadowBlur = 30;
+                    ctx.shadowColor = '#ffffff';
+                    ctx.fillStyle = `rgba(255, 255, 255, ${fastPulse})`;
+                    ctx.font = 'bold 16px "Segoe UI", sans-serif';
+                    ctx.fillText('HOLLOW PURPLE', centerX, centerY + 60);
                 }
                 
                 ctx.restore();
@@ -3574,16 +3652,58 @@
                 ctx.fillText(biome, lx, ly);
             }
             
+            // Connected biome zones - draw overlapping regions
+            ctx.globalAlpha = 0.25;
+            
+            // Volcano-Sand connection (top)
+            const vX = centerX + BIOME_CENTERS.VOLCANO.x * mapScale;
+            const vY = centerY + BIOME_CENTERS.VOLCANO.y * mapScale;
+            const sX = centerX + BIOME_CENTERS.SAND.x * mapScale;
+            const sY = centerY + BIOME_CENTERS.SAND.y * mapScale;
+            const snX = centerX + BIOME_CENTERS.SNOW.x * mapScale;
+            const snY = centerY + BIOME_CENTERS.SNOW.y * mapScale;
+            const cX = centerX + BIOME_CENTERS.CITY.x * mapScale;
+            const cY = centerY + BIOME_CENTERS.CITY.y * mapScale;
+            const fR = BIOME_SIZE * 0.5 * mapScale;
+            
+            // Draw connected biome blobs
+            ctx.fillStyle = BIOME_COLORS.VOLCANO.ground;
+            ctx.beginPath();
+            ctx.arc(vX, vY, fR, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = BIOME_COLORS.SAND.ground;
+            ctx.beginPath();
+            ctx.arc(sX, sY, fR, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = BIOME_COLORS.SNOW.ground;
+            ctx.beginPath();
+            ctx.arc(snX, snY, fR, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = BIOME_COLORS.CITY.ground;
+            ctx.beginPath();
+            ctx.arc(cX, cY, fR, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = BIOME_COLORS.FOREST.ground;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, fR * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.globalAlpha = 1;
+            
             // Connection lines between biomes
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(centerX + BIOME_CENTERS.VOLCANO.x * mapScale, centerY + BIOME_CENTERS.VOLCANO.y * mapScale);
+            ctx.moveTo(vX, vY);
             ctx.lineTo(centerX, centerY);
-            ctx.lineTo(centerX + BIOME_CENTERS.SAND.x * mapScale, centerY + BIOME_CENTERS.SAND.y * mapScale);
-            ctx.moveTo(centerX + BIOME_CENTERS.SNOW.x * mapScale, centerY + BIOME_CENTERS.SNOW.y * mapScale);
+            ctx.lineTo(sX, sY);
+            ctx.moveTo(snX, snY);
             ctx.lineTo(centerX, centerY);
-            ctx.lineTo(centerX + BIOME_CENTERS.CITY.x * mapScale, centerY + BIOME_CENTERS.CITY.y * mapScale);
+            ctx.lineTo(cX, cY);
             ctx.stroke();
             
             // Disaster curse spawn locations

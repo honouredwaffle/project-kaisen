@@ -454,7 +454,7 @@
         // Cursed spirits
         const cursedSpirits = [];
         const SPIRIT_COUNT = 650;
-        const MOBILE_SPIRIT_COUNT = 200; // Reduced for mobile performance
+        const MOBILE_SPIRIT_COUNT = 80; // Reduced for mobile performance
         
         const SPIRIT_GRADES = {
             'GRADE_4': { hp: 30, damage: 5, speed: 1, size: 12, spawnRate: 0.4, attackRange: 60, attackCooldown: 60, projectileSpeed: 3, closeRange: 30 },
@@ -2437,7 +2437,7 @@
         }
         
         function drawCursedSpirits() {
-            const viewPadding = 200;
+            const viewPadding = mobileMode ? 50 : 200; // Smaller view area on mobile
             const viewLeft = camera.x - viewPadding;
             const viewRight = camera.x + canvas.width + viewPadding;
             const viewTop = camera.y - viewPadding;
@@ -2452,6 +2452,42 @@
                 const screenY = spirit.y - camera.y;
                 
                 ctx.save();
+                
+                // Mobile: simplified rendering - just draw a circle
+                if (mobileMode) {
+                    // Simple shadow
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                    ctx.beginPath();
+                    ctx.ellipse(screenX, screenY + spirit.size * 0.3, spirit.size * 0.6, spirit.size * 0.2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Simple body - just a colored circle
+                    ctx.fillStyle = spirit.color;
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, spirit.size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Simple glow for special grades
+                    if (spirit.grade === 'SPECIAL' || spirit.grade === 'GRADE_1') {
+                        ctx.strokeStyle = spirit.color;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY, spirit.size * 0.9, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    
+                    // Simple health bar
+                    const hpPercent = spirit.hp / spirit.maxHp;
+                    const barWidth = spirit.size * 1.2;
+                    const barHeight = 3;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(screenX - barWidth/2, screenY - spirit.size - 12, barWidth, barHeight);
+                    ctx.fillStyle = hpPercent > 0.5 ? '#0f0' : (hpPercent > 0.25 ? '#ff0' : '#f00');
+                    ctx.fillRect(screenX - barWidth/2, screenY - spirit.size - 12, barWidth * hpPercent, barHeight);
+                    
+                    ctx.restore();
+                    continue; // Skip detailed rendering on mobile
+                }
                 
                 // Shadow
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -5678,52 +5714,56 @@
                 ctx.restore();
             }
             
-            // Draw red mist particles
-            for (const mist of sukunaDomain.redMist) {
-                const mx = mist.x - camera.x;
-                const my = mist.y - camera.y;
-                
-                ctx.save();
-                const mistAlpha = (mist.life / mist.maxLife) * mist.opacity;
-                ctx.globalAlpha = mistAlpha;
-                ctx.fillStyle = '#8b0000';
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = 'rgba(139, 0, 0, 0.5)';
-                
-                // Draw mist blob
-                ctx.beginPath();
-                ctx.arc(mx, my, mist.size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.restore();
+            // Draw red mist particles - skip on mobile
+            if (!mobileMode) {
+                for (const mist of sukunaDomain.redMist) {
+                    const mx = mist.x - camera.x;
+                    const my = mist.y - camera.y;
+                    
+                    ctx.save();
+                    const mistAlpha = (mist.life / mist.maxLife) * mist.opacity;
+                    ctx.globalAlpha = mistAlpha;
+                    ctx.fillStyle = '#8b0000';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = 'rgba(139, 0, 0, 0.5)';
+                    
+                    // Draw mist blob
+                    ctx.beginPath();
+                    ctx.arc(mx, my, mist.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
             }
             
-            // Draw cursed sparks
-            for (const spark of sukunaDomain.cursedSparks) {
-                const sx = spark.x - camera.x;
-                const sy = spark.y - camera.y;
-                
-                ctx.save();
-                const sparkAlpha = spark.life / spark.maxLife;
-                ctx.globalAlpha = sparkAlpha;
-                ctx.fillStyle = spark.color;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = spark.color;
-                
-                // Draw spark
-                ctx.beginPath();
-                ctx.arc(sx, sy, spark.size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Spark trail
-                ctx.strokeStyle = spark.color;
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(sx, sy);
-                ctx.lineTo(sx - spark.vx * 3, sy - spark.vy * 3);
-                ctx.stroke();
-                
-                ctx.restore();
+            // Draw cursed sparks - skip on mobile
+            if (!mobileMode) {
+                for (const spark of sukunaDomain.cursedSparks) {
+                    const sx = spark.x - camera.x;
+                    const sy = spark.y - camera.y;
+                    
+                    ctx.save();
+                    const sparkAlpha = spark.life / spark.maxLife;
+                    ctx.globalAlpha = sparkAlpha;
+                    ctx.fillStyle = spark.color;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = spark.color;
+                    
+                    // Draw spark
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, spark.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Spark trail
+                    ctx.strokeStyle = spark.color;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(sx - spark.vx * 3, sy - spark.vy * 3);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                }
             }
             
             // Draw slice effects (ENHANCED FLASHY VERSION)
@@ -5732,6 +5772,24 @@
                 const sy = slice.y - camera.y;
                 const alpha = slice.life / slice.maxLife;
                 const width = slice.width || 3;
+                
+                // Mobile: simplified slash rendering
+                if (mobileMode) {
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    ctx.rotate(slice.angle);
+                    
+                    const length = slice.length;
+                    ctx.strokeStyle = `rgba(255, 100, 100, ${alpha})`;
+                    ctx.lineWidth = width;
+                    ctx.beginPath();
+                    ctx.moveTo(-length / 2, 0);
+                    ctx.lineTo(length / 2, 0);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    continue;
+                }
                 
                 ctx.save();
                 ctx.translate(sx, sy);
@@ -8919,22 +8977,8 @@
             }
         }
 
-        // Frame skipping for mobile performance
-        let lastFrameTime = 0;
-        const MOBILE_FRAME_INTERVAL = 1000 / 30; // Cap at 30fps on mobile
-        
-        function loop(currentTime) {
+        function loop() {
             frame++;
-            
-            // Frame rate limiting for mobile
-            if (mobileMode) {
-                const elapsed = currentTime - lastFrameTime;
-                if (elapsed < MOBILE_FRAME_INTERVAL) {
-                    requestAnimationFrame(loop);
-                    return;
-                }
-                lastFrameTime = currentTime;
-            }
             
             // Ensure canvas is properly sized
             if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
